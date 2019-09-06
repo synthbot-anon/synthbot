@@ -12,7 +12,7 @@ mkdir soundtools # project directory to track relevant files
 cd soundtools # we'll always assume we're working in this directory henceforth
 
 mkdir data # keep data files organized in one place
-git clone "https://github.com/sunnysd-hvstudios/synthbot.git"
+git clone "https://github.com/synthbot-anon/synthbot.git"
 ```
 
 The `data/` directory organization should reflect preprocessing flows. You'll be adding more directories in `data/` as you go through the preprocessing steps. For now, we'll just add a folder for Clipper's clips.
@@ -52,7 +52,7 @@ docker run \
     --mount "type=bind,src=$(pwd)/synthbot,dst=/home/celestia/synthbot" \
     --publish "127.0.0.1:8888:8888" \
     --hostname "synthbot" \
-    --rm -it sunnysd/synthbot:latest
+    --rm -it synthbot/soundtools:latest
 ```
 
 I recommend saving that as a shell script.
@@ -65,7 +65,7 @@ Walking through the `docker run` command line arguments:
 * `--publish "127.0.0.1:8888:8888"` forwards the container port 8888 to your host port 8888. The `127.0.0.1` forces this port to be available on your host computer in a way that it isn't exposed to the rest of the internet. This is good because we're eventually going to run Jupyter on this port, and anyone with access to this port will be able to execute arbitrary code within your container.
 * `--hostname "soundtools"` sets the network name of your container. This might have some utility later, but for now it just makes the command prompt less ugly.
 * `--rm` tells Docker to clean up after itself once the container is done running. Don't remove this flag unless you know what you're doing, otherwise you'll find that Docker is consuming way more disk space than it seems to need.
-* `-it sunnysd/synthbot:latest` drops you into an interactive shell in the `sunnysd/synthbot:latest` container hosted on [Docker Hub](https://hub.docker.com).
+* `-it synthbot/soundtools:latest` drops you into an interactive shell in the `synthbot/soundtools:latest` container hosted on [Docker Hub](https://hub.docker.com).
 
 ## Running the dev environment
 Inside the container, you can set up the development environment with:
