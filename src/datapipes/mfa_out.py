@@ -1,8 +1,9 @@
+import os
 
 import librosa, soundfile # type: ignore
-import os
-from datapipes.verifiedfiles import *
+
 import datapipes
+from datapipes.verifiedfiles import *
 
 
 class MFAPreprocessor:
@@ -55,4 +56,3 @@ class MFAPreprocessor:
 		
 		write_normalized_transcript(input_transcript, input_audio, output_transcript_path)
 		write_normalized_audio(input_audio, output_audio_path)
-

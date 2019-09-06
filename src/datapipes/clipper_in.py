@@ -1,7 +1,9 @@
-import datapipes
-from typing import *
 import os
 import re
+from typing import *
+
+import datapipes
+
 
 AUDIO_EXTENSIONS = set(['.flac', '.wav'])
 
@@ -275,4 +277,3 @@ class ClipperFile:
 		self.audio_path = audio_path
 		self.transcript_path = '{}.txt'.format(base_filename)
 		self.character = character_from_path(audio_path)
-

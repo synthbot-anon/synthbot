@@ -1,5 +1,11 @@
 import os
+
+import librosa #type: ignore
+import soundfile #type: ignore
 from praatio import tgio #type: ignore
+
+import datapipes
+
 
 AUDIO_SAMPLE_RATE = 16000
 OUTPUT_AUDIO_FORMAT = '.wav'

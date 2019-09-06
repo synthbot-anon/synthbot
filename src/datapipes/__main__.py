@@ -1,7 +1,10 @@
+import os
 import argparse
+
+import datapipes
 from datapipes import clipper_in, mfa_out
 from datapipes.verifiedfiles import *
-import datapipes
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
@@ -30,8 +33,15 @@ if __name__ == '__main__':
 		try:
 			audio_file = VerifiedFile(clip.audio_path)
 			transcript_file = VerifiedFile(clip.transcript_path)
+
+			assert os.path.exists(transcript_file.path), \
+				'Missing transcript file for [{}]'.format(audio_file.path)
+
 			aligner.generate_input(clip.character, audio_file, transcript_file)
 		except AssertionError as e:
 			if not datapipes.__dry_run__:
 				raise
 			print(e)
+
+	if datapipes.__dry_run__ or datapipes.__verbose__:
+		print('Done')
