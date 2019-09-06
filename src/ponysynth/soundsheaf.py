@@ -86,6 +86,7 @@ class Utterance:
 
 		self.phones = list(phones)
 		self.diphones = list(diphones)
+		self.diphone_sequence = DiphoneSequence(self.diphones)
 
 	def get_start_time(self):
 		return self.phones[0].sheaf.interval.left
