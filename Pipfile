@@ -16,6 +16,8 @@ pandas = "*"
 librosa = "*"
 pysoundfile = "*"
 numpy = "*"
+508ac32 = {editable = true,path = "./vendor/cochlea"}
+vae-seq = {editable = true,path = "./vendor/vae-seq"}
 
 [requires]
 python_version = "3.6"
