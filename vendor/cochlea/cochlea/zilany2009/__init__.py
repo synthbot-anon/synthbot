@@ -121,10 +121,6 @@ def run_zilany2009(
     trains = itertools.chain(*nested)
     spike_trains = pd.DataFrame(list(trains))
 
-
-    if isinstance(np.fft.fftpack._fft_cache, dict):
-        np.fft.fftpack._fft_cache = {}
-
     return spike_trains
 
 
