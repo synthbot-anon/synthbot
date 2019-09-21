@@ -3,13 +3,16 @@ import os
 import librosa, soundfile # type: ignore
 
 import datapipes
-from datapipes.verifiedfiles import *
+from datapipes.fileutils import *
 
+
+OUTPUT_AUDIO_FORMAT = '.wav'
+OUTPUT_TRANSCRIPT_FORMAT = '.textgrid'
 
 class MFAPreprocessor:
-	def __init__(self, input_path: str, output_dir: VerifiedDirectory):
+	def __init__(self, input_path: str, output_dir: str):
 		self.input_dir = get_directory(input_path)
-		self.output_dir = output_dir.path
+		self.output_dir = VerifiedDirectory(output_dir).path
 
 		if datapipes.__delta__:
 			# get known output files
@@ -22,24 +25,22 @@ class MFAPreprocessor:
 					for x in files if os.path.splitext(x)[-1] == OUTPUT_TRANSCRIPT_FORMAT])
 
 	def get_character_path(self, character):
-		normalized_character = path_to_normalized_path(character)
+		normalized_character = normalize_path(character)
 		character_path = os.path.join(self.output_dir, normalized_character)
 		verified_path = VerifiedDirectory(character_path)
 		return verified_path.path
 
-	def get_output_path(self, character, input_path):
-		relative_input_path = os.path.relpath(input_path, self.input_dir)
-		relative_output_path = path_to_normalized_path(relative_input_path)
-		
-		return os.path.join(self.get_character_path(character), relative_output_path)
+	def get_output_path(self, character, input_fn):
+		output_fn = normalize_path(input_fn)
+		return os.path.join(self.get_character_path(character), output_fn)
 
-	def generate_input(self, character: str, audio_file: VerifiedFile, transcript_file: VerifiedFile):
-		base_filename = os.path.splitext(audio_file.path)[0]
+	def generate_result(self, character: str, audio_file: VerifiedFile,
+			reference: str, transcript: str):
 
 		output_transcript_path = self.get_output_path(character,
-			'{}{}'.format(base_filename, OUTPUT_TRANSCRIPT_FORMAT))
+			'{}{}'.format(reference, OUTPUT_TRANSCRIPT_FORMAT))
 		output_audio_path = self.get_output_path(character, 
-			'{}{}'.format(base_filename, OUTPUT_AUDIO_FORMAT))
+			'{}{}'.format(reference, OUTPUT_AUDIO_FORMAT))
 
 		if datapipes.__delta__:
 			if output_transcript_path in self.known_transcript_paths \
@@ -52,7 +53,6 @@ class MFAPreprocessor:
 			return
 
 		input_audio = NormalizedAudio(audio_file)
-		input_transcript = read_normalized_transcript(transcript_file)
 		
-		write_normalized_transcript(input_transcript, input_audio, output_transcript_path)
+		write_normalized_transcript(transcript, input_audio, output_transcript_path)
 		write_normalized_audio(input_audio, output_audio_path)

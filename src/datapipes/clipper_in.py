@@ -3,6 +3,7 @@ import re
 from typing import *
 
 import datapipes
+from datapipes.fileutils import *
 
 
 AUDIO_EXTENSIONS = set(['.flac', '.wav'])
@@ -126,6 +127,7 @@ CHARACTERS = {
 	'Mori': 'Mori',
 	'Mr Cake': 'Mr Cake',
 	'Mr. Cake': 'Mr Cake',
+	'Mr. Shy': 'Mr Shy',
 	'Mrs Cake': 'Mrs Cake',
 	'Mrs. Cake': 'Mrs Cake',
 	'Mrs. Shy': 'Mrs Shy',
@@ -216,6 +218,7 @@ CHARACTERS = {
 	'Tree Hugger': 'Tree Hugger',
 	'Tree Of Harmony': 'Tree Of Harmony',
 	'Trixie': 'Trixie',
+	'Trouble Shoes': 'Trouble Shoes',
 	'Twilight Velvet': 'Twilight Velvet',
 	'Twilight': 'Twilight Sparkle',
 	'Twinkleshine': 'Twinkleshine',
@@ -234,46 +237,175 @@ CHARACTERS = {
 	'Zesty Gourmand': 'Zesty Gourmand',
 }
 
-class ClipperDataset:
-	def __init__(self, folder: str):
-		self.folder = folder
+TAGS = [
+	'Amused',
+	'Angry',
+	'Annoyed',
+	'Anxious',
+	'Bored',
+	'Canterlot Voice',
+	'Confused',
+	'Crazy',
+	'Curious',
+	'Disgust',
+	'Dizzy',
+	'Excited',
+	'Exhausted',
+	'Fear',
+	'Happy',
+	'Laughing',
+	'Love',
+	'Muffled',
+	'Nervous',
+	'Neutral',
+	'Sad',
+	'Sarcastic',
+	'Serious',
+	'Shouting',
+	'Singing',
+	'Smug',
+	'Surprised',
+	'Tired',
+	'Whining',
+	'Whispering'
+]
+_tag_regex = '|'.join(TAGS)
 
-	def get_clips(self):
-		if datapipes.__verbose__:
-			print('collecting audio files from {}'.format(self.folder.path))
+NOISE = {
+	'': '',
+	'Clean': '',
+	'Noisy': 'Noisy',
+	'Very Noisy': 'Very Noisy'
+}
 
-		audio_paths = []
-		for root, dirs, files in os.walk(self.folder.path, followlinks=False):
-			audio_paths.extend([os.path.join(root, x)
-				for x in files if os.path.splitext(x)[-1] in AUDIO_EXTENSIONS])
+class ClipperLabelSet(LocalFiles):
+	def __init__(self, path: str):
+		LocalFiles.__init__(self, get_directory(path))
 
-		for path in audio_paths:
-			try:
-				if datapipes.__verbose__:
-					print('found {}'.format(path))
-				yield ClipperFile(path)
-			except AssertionError as e:
-				if not datapipes.__dry_run__:
-					raise
-				print(str(e))
+	def _accept_path(self, path: str):
+		return get_name(path) in ('labels.txt', 'fim_movie.txt')
 
-def character_from_path(path: str):
-	filename = os.path.basename(path)
+	def _wrap_path(self, path: str):
+		return ClipperLabels(path)
 
-	# hh_mm_ss_character_extra
-	character_match = re.search(r'^[0-9][0-9]_[0-9][0-9]_[0-9][0-9]_([^_]*)', filename)
-	assert character_match != None, \
-		'Sound file {} should be in format hh_mm_ss_CharacterName_extra.flac'.format(path)
+	def collect(self):
+		result = {}
+		for file in self.get_files():
+			result.update(file.labels)
 
-	character_key = character_match.groups()[0]
+		return result
+
+def remove_non_ascii(text):
+	return re.sub(r'[^\x00-\x7f]', '', text)
+
+def audio_name_from_label_line(line: str, known_paths):
+	label = line.split('\t')[-1].strip()
+	base = re.sub(r'[?]', '_', label)
+	base = remove_non_ascii(base)
+	
+	if base not in known_paths:
+		return base
+
+	duplicate_count = 1
+	modified = base
+	while modified in known_paths:
+		duplicate_count += 1
+		modified = '{}-{}'.format(base, duplicate_count)
+
+	return modified	
+
+def _parse_label(line):
+	start, end, label = line.split('\t')
+	
+	label_parts = label.split('_')
+	# skip hh_mm_ss
+	assert re.match(r'[0-9][0-9]', label_parts[0])
+	assert re.match(r'[0-9][0-9]', label_parts[1])
+	assert re.match(r'[0-9][0-9]', label_parts[2])
+
+	# get character name
+	character_key = label_parts[3]
 	assert character_key in CHARACTERS, \
 		'Missing character {} in clipper_in.CHARACTERS for {}'.format(character_key, path)
+	character = CHARACTERS[character_key]
 
-	return CHARACTERS[character_key]
+	# get tags
+	tags = re.findall(_tag_regex, label_parts[4])
+	assert label_parts[4] == ' '.join(tags), \
+		'Something wrong with the tags in {}'.format(line.strip())
+
+	# noise level
+	noise_level = label_parts[5]
+	assert noise_level in NOISE, \
+		'Missing noise tag {} in clipper_in.NOISE for {}'.format(noise_level, path)
+
+	# get transcript
+	transcript = label_parts[6].strip()
+	assert len(label_parts) == 7, \
+		'Excess label parts in {}'.format(line.strip())
+	
+	return {
+		'start': start,
+		'end': end,
+		'character': character,
+		'tags': tags,
+		'noise': noise_level,
+		'transcript': transcript
+	}
+
+class ClipperLabels:
+	def __init__(self, path: str):
+		self.path = path
+		self.labels = {}
+		for line in open(path).readlines():
+			try:
+				audio_name = audio_name_from_label_line(line, self.labels)
+				label = _parse_label(line)
+				
+				assert audio_name not in self.labels
+				self.labels[audio_name] = label
+
+			except AssertionError as e:
+				if not datapipes.__dry_run__:
+					raise e
+				print(e)
+
+class ClipperDataset(LocalFiles):
+	def __init__(self, path: str):
+		LocalFiles.__init__(self, path)
+
+		if datapipes.__verbose__:
+			print('reading transcipts and labels from labels.text files')
+
+		self.labels = ClipperLabelSet(path).collect()
+
+	def _accept_path(self, path: str):
+		return os.path.splitext(path)[-1].lower() in AUDIO_EXTENSIONS
+
+	def _wrap_path(self, path: str):
+		audio_name = get_name(os.path.splitext(path)[0])
+		audio_name = remove_non_ascii(audio_name)
+
+		if audio_name not in self.labels and '{}.'.format(audio_name) in self.labels:
+			audio_name = '{}.'.format(audio_name)
+
+		assert audio_name in self.labels, \
+			'Missing audio name {} in labels'.format(audio_name)
+
+		return ClipperFile(path, self.labels[audio_name])
+
+def episode_from_path(path: str):
+	episode_directory = get_name(get_directory(path))
+	return episode_directory
 
 class ClipperFile:
-	def __init__(self, audio_path: str):
+	def __init__(self, audio_path: str, label: dict):
 		base_filename = os.path.splitext(audio_path)[0]
 		self.audio_path = audio_path
-		self.transcript_path = '{}.txt'.format(base_filename)
-		self.character = character_from_path(audio_path)
+		self.label = label
+		self.episode = episode_from_path(audio_path)
+		self.reference = normalize_path('{}-{}-{}-{}'.format(
+			self.label['character'],
+			self.episode, 
+			self.label['start'],
+			self.label['end']))
