@@ -36,5 +36,5 @@ class MFAAlignmentsFile:
 		for phone_entry in alignment_data.tierDict['utt - phones'].entryList:
 			self.phones.append({
 				'content': phone_entry.label,
-				'interval': [phone_entry.start, word_entry.end]
+				'interval': [phone_entry.start, phone_entry.end]
 			})
