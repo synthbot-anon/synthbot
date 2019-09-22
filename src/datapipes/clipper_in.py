@@ -10,12 +10,14 @@ AUDIO_EXTENSIONS = set(['.flac', '.wav'])
 
 CHARACTERS = {
 	'A. K. Yearling': 'AK Yearling',
+	'Adagio Dazzle': 'Adagio Dazzle',
 	'Ahuizotl': 'Ahuizotl',
 	'All Aboard': 'All Aboard',
 	'Apple Bloom': 'Apple Bloom',
 	'Apple Cobbler': 'Apple Cobbler',
 	'Apple Rose': 'Apple Rose',
 	'Applejack': 'Applejack',
+	"Aria Blaze": "Aria Blaze",
 	'Auntie Applesauce': 'Auntie Applesauce',
 	'Autumn Blaze': 'Autumn Blaze',
 	'Babs Seed': 'Babs Seed',
@@ -44,6 +46,7 @@ CHARACTERS = {
 	'Cherry Jubilee': 'Cherry Jubilee',
 	'Chiffon Swirl': 'Chiffon Swirl',
 	'Chrysalis': 'Chrysalis',
+	"Cinch": "Cinch",
 	'Clear Skies': 'Clear Skies',
 	'Cloudy Quartz': 'Cloudy Quartz',
 	'Coco Pommel': 'Coco Pommel',
@@ -69,6 +72,7 @@ CHARACTERS = {
 	'Fancy Pants': 'Fancy Pants',
 	'Featherweight': 'Featherweight',
 	'Female Pony 2': 'Female Pony 2',
+	"Flash Sentry": "Flash Sentry",
 	'Film': 'Film',
 	'Filthy Rich': 'Filthy Rich',
 	'Firelight': 'Firelight',
@@ -82,6 +86,7 @@ CHARACTERS = {
 	'Gallus': 'Gallus',
 	'Gilda': 'Gilda',
 	'Gladmane': 'Gladmane',
+	"Gloriosa Daisy": "Gloriosa Daisy",
 	'Goldgrape': 'Goldgrape',
 	'Goldie Delicious': 'Goldie Delicious',
 	'Grampa Gruff': 'Grampa Gruff',
@@ -119,6 +124,8 @@ CHARACTERS = {
 	'Mean Rainbow Dash': 'Mean Rainbow Dash',
 	'Mean Rarity': 'Mean Rarity',
 	'Mean Twilight Sparkle': 'Mean Twilight Sparkle',
+	"Micro Chips": "Micro Chips",
+	"Midnight Sparkle": "Midnight Sparkle",
 	'Minuette': 'Minuette',
 	'Miss Harshwhinny': 'Miss Harshwhinny',
 	'Mistmane': 'Mistmane',
@@ -171,6 +178,7 @@ CHARACTERS = {
 	'Rumble': 'Rumble',
 	'S04e26 Unnamed Earth Mare #1': 'S04e26 Unnamed Earth Mare #1',
 	'Saffron Masala': 'Saffron Masala',
+	"Sandalwood": "Sandalwood",
 	'Sandbar': 'Sandbar',
 	'Sapphire Shores': 'Sapphire Shores',
 	'Sassy Saddles': 'Sassy Saddles',
@@ -189,6 +197,7 @@ CHARACTERS = {
 	'Soarin': 'Soarin',
 	'Sombra': 'Sombra',
 	'Somnambula': 'Somnambula',
+	"Sonata Dusk": "Sonata Dusk",
 	'Songbird Serenade': 'Songbird Serenade',
 	'Spike': 'Spike',
 	'Spitfire': 'Spitfire',
@@ -202,6 +211,7 @@ CHARACTERS = {
 	'Stygian': 'Stygian',
 	'Sugar Belle': 'Sugar Belle',
 	'Sunburst': 'Sunburst',
+	"Sunset Shimmer": "Sunset Shimmer",
 	'Surprise': 'Surprise',
 	'Svengallop': 'Svengallop',
 	'Sweetie Belle': 'Sweetie Belle',
@@ -212,6 +222,7 @@ CHARACTERS = {
 	'Thorax': 'Thorax',
 	'Thunderlane': 'Thunderlane',
 	'Tight End': 'Tight End',
+	"Timber Spruce": "Timber Spruce",
 	'Tirek': 'Tirek',
 	'Toothy Klugetowner': 'Toothy Klugetowner',
 	'Tourist Pony': 'Tourist Pony',
@@ -227,6 +238,7 @@ CHARACTERS = {
 	'Vendor 2': 'Vendor 2',
 	'Vera': 'Vera',
 	'Verko': 'Verko',
+	"Vignette": "Vignette",
 	'Vinny': 'Vinny',
 	'Whinnyfield': 'Whinnyfield',
 	'Wind Rider': 'Wind Rider',
@@ -326,7 +338,7 @@ def _parse_label(line):
 	# get character name
 	character_key = label_parts[3]
 	assert character_key in CHARACTERS, \
-		'Missing character {} in clipper_in.CHARACTERS for {}'.format(character_key, path)
+		'Missing character {} in clipper_in.CHARACTERS for {}'.format(character_key, line)
 	character = CHARACTERS[character_key]
 
 	# get tags
@@ -337,7 +349,7 @@ def _parse_label(line):
 	# noise level
 	noise_level = label_parts[5]
 	assert noise_level in NOISE, \
-		'Missing noise tag {} in clipper_in.NOISE for {}'.format(noise_level, path)
+		'Missing noise tag {} in clipper_in.NOISE for {}'.format(noise_level, line)
 
 	# get transcript
 	transcript = label_parts[6].strip()
