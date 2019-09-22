@@ -13,7 +13,6 @@ praatio = "*"
 librosa = "*"
 pysoundfile = "*"
 numpy = "*"
-vae-seq = {editable = true,path = "./vendor/vae-seq"}
 tqdm = "*"
 ipywidgets = "*"
 

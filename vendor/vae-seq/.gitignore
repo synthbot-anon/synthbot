@@ -1,7 +1,0 @@
-*~
-*.pyc
-bazel-*
-build/
-dist/
-*.egg*
-*#*
