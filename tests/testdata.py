@@ -1,4 +1,4 @@
-from ponysynth.speechcorpus import load_audio, load_utterance
+from ponysynth.speech_corpus import load_audio, load_utterance
 
 
 class OnceUponATime:

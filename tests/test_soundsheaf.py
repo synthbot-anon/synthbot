@@ -1,4 +1,4 @@
-from ponysynth.speechcorpus import *
+from ponysynth.speech_corpus import *
 from tests.testdata import *
 
 
