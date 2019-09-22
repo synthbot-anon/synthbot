@@ -9,15 +9,18 @@ pytest = "*"
 pytest-cov = "*"
 ipython = "*"
 jupyterlab = "*"
-
-[packages]
 praatio = "*"
-pandas = "*"
 librosa = "*"
 pysoundfile = "*"
 numpy = "*"
-508ac32 = {editable = true,path = "./vendor/cochlea"}
 vae-seq = {editable = true,path = "./vendor/vae-seq"}
+tqdm = "*"
+ipywidgets = "*"
+
+[packages]
 
 [requires]
 python_version = "3.6"
+
+[pipenv]
+allow_prereleases = true
