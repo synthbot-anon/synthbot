@@ -15,6 +15,7 @@ pysoundfile = "*"
 numpy = "*"
 tqdm = "*"
 ipywidgets = "*"
+matplotlib = "*"
 
 [packages]
 
