@@ -8,14 +8,15 @@ import random
 import io
 
 import librosa # type: ignore
+import soundfile
+import numpy
 
 from ponysynth.indexes import SubstringIndex
-from ponysynth.sound_sheaf import *
 
 
 class ClipperArchive:
 	def __init__(self, archive_path):
-		self._archive = tarfile.open(archive_path, mode='r:gz')
+		self._archive = tarfile.open(archive_path, mode='r')
 		self._tarobjects = _load_tar_objects(self._archive)
 
 	def read_label(self, key):
@@ -26,8 +27,7 @@ class ClipperArchive:
 
 	def read_audio(self, key):
 		file = self._archive.extractfile(self._tarobjects[key]['audio'])
-		data = file.read()
-		return data
+		return file
 
 	def labels(self):
 		for key in self._tarobjects.keys():
@@ -77,8 +77,11 @@ class SpeechCorpus:
 		return PhoneSeqs(self, _gen())
 
 
-# From DzinX on https://stackoverflow.com/questions/12581437
 def _iter_sample_fast(iterable, samplesize):
+	"""
+	From DzinX on https://stackoverflow.com/questions/12581437
+	Take random samples from a generator.
+	"""
 	results = []
 	iterator = iter(iterable)
 	# Fill in the first samplesize elements:
@@ -104,10 +107,24 @@ class PhoneSeqs:
 		return PhoneSeqs(self.corpus, _iter_sample_fast(self.generator, k))
 
 	def __iter__(self):
-		return self
+		return (PhoneSeq(self.corpus, *x) for x in self.generator)
+
+	def cache(self):
+		return PhoneSeqsCache(self.corpus, list(self.generator))
+
+class PhoneSeqsCache:
+	def __init__(self, corpus, cache):
+		self.corpus = corpus
+		self.cache = cache
+
+	def sample(self, k=1):
+		return [PhoneSeq(self.corpus, *x) for x in random.sample(self.cache, k=k)]
+
+	def __iter__(self):
+		return (PhoneSeq(self.corpus, *x) for x in self.cache)
 
 	def __next__(self):
-		return PhoneSeq(self.corpus, *next(self.generator))
+		return self.cache[0]
 
 	
 class PhoneSeq:
@@ -117,31 +134,35 @@ class PhoneSeq:
 		self.offset = offset
 		self.length = length
 
-	def phones(self):
+	def _phones(self):
+		start = self.offset
+		end = self.offset + self.length
+		return self.clip['phones'][start:end]
+
+	def intervals(self):
 		start = self.offset
 		end = self.offset + self.length
 
-		return self.clip['phones'][start:end]
-	
+		clip_intervals = [x['interval'] for x in self._phones()]
+		seq_start = clip_intervals[0][0]
+		return numpy.array(clip_intervals) - seq_start
+
 	def phonemes(self):
-		return (x['content'] for x in self.phones())
+		return tuple((x['content'] for x in self._phones()))
 
 	def diphonemes(self):
-		phonemes = [x['content'] for x in self.phones()]
+		phonemes = self.phonemes()
 		diphonemes = zip(phonemes[:-1], phonemes[1:])
 		
-		return diphonemes
+		return tuple(diphonemes)
 
 	def audio(self):
 		utterance = self.corpus.archive.read_audio(self.clip['key'])
-		samples, rate = librosa.core.load(io.BytesIO(utterance), sr=None)
+		samples, rate = librosa.core.load(utterance, sr=None)
 
-		phones = self.phones()
-		start, _ = phones[0]['interval']
-		_, end = phones[-1]['interval']
-
-		print(self.clip['key'])
-		print(phones)
+		intervals = [x['interval'] for x in self._phones()]
+		start, _ = intervals[0]
+		_, end = intervals[-1]
 
 		start_idx = int(start * rate)
 		end_idx = int(end * rate)
