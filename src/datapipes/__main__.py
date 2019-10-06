@@ -2,7 +2,7 @@ import os
 import argparse
 
 import datapipes
-from datapipes import clipper_in, mfa_out, mfa_in, tgz_out
+from datapipes import clipper_in, mfa_out, mfa_in, tar_out
 from datapipes.fileutils import *
 
 
@@ -26,9 +26,9 @@ def generate_mfa_inputs(clips_dir, output_dir):
 	if datapipes.__dry_run__ or datapipes.__verbose__:
 		print('Done')
 
-def generate_audio_tgz(clips_dir, alignments_dir, output_dir, 
+def generate_audio_tar(clips_dir, alignments_dir, output_dir, 
 		audio_format, sample_rate):
-	with tgz_out.TgzGenerator(output_dir, audio_format, sample_rate) as tgz_generator:
+	with tar_out.TarGenerator(output_dir, audio_format, sample_rate) as tar_generator:
 		known_audio_files = {}
 		
 		if datapipes.__verbose__:
@@ -45,7 +45,7 @@ def generate_audio_tgz(clips_dir, alignments_dir, output_dir,
 				reference = alignments.reference
 				audio = known_audio_files[reference]
 
-				tgz_generator.generate_result(reference, audio, alignments)
+				tar_generator.generate_result(reference, audio, alignments)
 			except AssertionError as e:
 				if not datapipes.__dry_run__:
 					raise
@@ -83,7 +83,7 @@ if __name__ == '__main__':
 		description='Preprocessing helper functions for synthbot.')
 	group = parser.add_mutually_exclusive_group(required=True)
 	group.add_argument('--mfa-inputs', required=False, action='store_true')
-	group.add_argument('--audio-tgz', required=False, action='store_true')
+	group.add_argument('--audio-tar', required=False, action='store_true')
 
 	args = parser.parse_known_args()[0]
 	if args.mfa_inputs:
@@ -101,10 +101,10 @@ if __name__ == '__main__':
 		process_common_args(args)
 		generate_mfa_inputs(args.input, args.output)
 	
-	elif args.audio_tgz:
+	elif args.audio_tar:
 		tfds_parser = argparse.ArgumentParser(
 			description='Create tensorflow dataset from audio clips and textgrids')
-		tfds_parser.add_argument('--audio-tgz', required=True, action='store_true')
+		tfds_parser.add_argument('--audio-tar', required=True, action='store_true')
 		add_common_args(tfds_parser)
 
 		tfds_parser.add_argument('--input-audio', metavar='fn', type=str, required=True,
@@ -120,5 +120,5 @@ if __name__ == '__main__':
 
 		args = tfds_parser.parse_args()
 		process_common_args(args)
-		generate_audio_tgz(args.input_audio, args.input_alignments, 
+		generate_audio_tar(args.input_audio, args.input_alignments, 
 			args.output, args.audio_format, args.sampling_rate)

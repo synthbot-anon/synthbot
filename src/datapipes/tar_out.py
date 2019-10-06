@@ -10,22 +10,22 @@ from datapipes.fileutils import *
 from datapipes import clipper_in, mfa_in
 
 
-class TgzGenerator:
+class TarGenerator:
 	def __init__(self, output_dir, audio_format, sample_rate):
 		self.output_dir = VerifiedDirectory(output_dir).path
 		self.audio_format = audio_format
 		self.sample_rate = sample_rate
 		self.character_handles = {}
 	
-	def get_character_tgz(self, character):
+	def get_character_tar(self, character):
 		if character in self.character_handles:
 			return self.character_handles[character]
 
 		normalized_character = normalize_path(character)
-		character_tgz_path = os.path.join(self.output_dir,
-			'{}.tgz'.format(normalized_character))
+		character_tar_path = os.path.join(self.output_dir,
+			'{}.tar'.format(normalized_character))
 		
-		result = tarfile.open(character_tgz_path, 'w:gz')
+		result = tarfile.open(character_tar_path, 'w')
 		self.character_handles[character] = result
 
 		return result
@@ -57,7 +57,7 @@ class TgzGenerator:
 			'phones': alignments.phones
 		}
 		
-		output_file = self.get_character_tgz(character)
+		output_file = self.get_character_tar(character)
 		label_data = json.dumps(label).encode('utf-8')
 
 		if datapipes.__dry_run__:
@@ -72,8 +72,8 @@ class TgzGenerator:
 		write_tardata(output_file, output_label_path, label_data)
 
 	def close_all(self):
-		for tgz in self.character_handles.values():
-			tgz.close()
+		for tar in self.character_handles.values():
+			tar.close()
 
 	def __enter__(self):
 		return self
