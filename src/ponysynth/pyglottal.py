@@ -1,3 +1,6 @@
+# Taken from https://github.com/serwy/hilbertgci with minor
+# modifications.
+
 from pylab import *
 from numpy import *
 import scipy.signal as sig

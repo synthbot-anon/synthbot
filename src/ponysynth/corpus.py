@@ -50,23 +50,23 @@ class SpeechCorpus:
 			phones = [x['content'] for x in label['phones']]
 			self._phone_idx.index(phones, label)
 
-	def diphones(self):
+	def nphones(self, n):
 		assert self._phone_idx != None
 
 		def _gen():
-			for utterance, offset in self._phone_idx.read_layer(height=2):
-				yield (utterance, offset, 2)
-
-		return PhoneSeqs(self, _gen())
-
-	def triphones(self):
-		assert self._phone_idx != None
-
-		def _gen():
-			for utterance, offset in self._phone_idx.read_layer(height=3):
+			for utterance, offset in self._phone_idx.read_layer(height=n):
 				yield (utterance, offset, 3)
 
 		return PhoneSeqs(self, _gen())
+
+	def phones(self):
+		return self.nphones(1)
+
+	def diphones(self):
+		return self.nphones(2)
+
+	def triphones(self):
+		return self.nphones(3)
 
 	def phoneseqs(self, phonemes):
 		def _gen():
@@ -124,9 +124,12 @@ class PhoneSeqsCache:
 		return (PhoneSeq(self.corpus, *x) for x in self.cache)
 
 	def __next__(self):
-		return self.cache[0]
+		return PhoneSeq(self.corpus, *self.cache[0])
 
-	
+	def __getitem__(self, index):
+		return PhoneSeq(self.corpus, *self.cache[index])
+
+
 class PhoneSeq:
 	def __init__(self, corpus, clip, offset, length):
 		self.corpus = corpus
@@ -167,6 +170,9 @@ class PhoneSeq:
 		start_idx = int(start * rate)
 		end_idx = int(end * rate)
 		return samples[start_idx:end_idx], rate
+
+	def utterance(self):
+		return PhoneSeq(self.corpus, self.clip, 0, len(self.clip['phones']))
 
 def _load_tar_objects(archive):
 	result = {}

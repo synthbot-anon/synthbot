@@ -18,6 +18,8 @@ ipywidgets = "*"
 matplotlib = "*"
 
 [packages]
+praat-parselmouth = "*"
+seaborn = "*"
 
 [requires]
 python_version = "3.6"
