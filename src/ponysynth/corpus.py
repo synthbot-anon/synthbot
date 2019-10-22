@@ -129,6 +129,9 @@ class PhoneSeqsCache:
 	def __getitem__(self, index):
 		return PhoneSeq(self.corpus, *self.cache[index])
 
+	def __len__(self):
+		return len(self.cache)
+
 
 class PhoneSeq:
 	def __init__(self, corpus, clip, offset, length):
