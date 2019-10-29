@@ -25,6 +25,7 @@ CHARACTERS = {
 	'Big Daddy Mccolt': 'Big Daddy Mccolt',
 	'Big Mac': 'Big Macintosh',
 	'Big Macintosh': 'Big Macintosh',
+	'Biscuit': 'Biscuit',
 	'Blaze': 'Blaze',
 	'Bow Hothoof': 'Bow Hothoof',
 	'Boyle': 'Boyle',
@@ -35,6 +36,7 @@ CHARACTERS = {
 	'Caballeron': 'Caballeron',
 	'Cadance': 'Cadance',
 	'Cadence': 'Cadance',
+	'Canter Zoom': 'Canter Zoom',
 	'Capper': 'Capper',
 	'Captain Celaeno': 'Captain Celaeno',
 	'Carnival Barker': 'Carnival Barker',
@@ -44,6 +46,7 @@ CHARACTERS = {
 	'Cheese Sandwich': 'Cheese Sandwich',
 	'Cherry Berry': 'Cherry Berry',
 	'Cherry Jubilee': 'Cherry Jubilee',
+	'Chestnut Magnifico': 'Chestnut Magnifico',
 	'Chiffon Swirl': 'Chiffon Swirl',
 	'Chrysalis': 'Chrysalis',
 	"Cinch": "Cinch",
@@ -93,6 +96,7 @@ CHARACTERS = {
 	'Grand Pear': 'Grand Pear',
 	'Granny Smith': 'Granny Smith',
 	'Grany Smith': 'Granny Smith',
+	'Grogar': 'Grogar',
 	'Grubber': 'Grubber',
 	'Gustave Le Grand': 'Gustave Le Grand',
 	'High Winds': 'High Winds',
@@ -101,7 +105,9 @@ CHARACTERS = {
 	'Igneous': 'Igneous',
 	'Iron Will': 'Iron Will',
 	'Jack Pot': 'Jack Pot',
+	'Juniper Montage': 'Juniper Montage',
 	'Lemon Hearts': 'Lemon Hearts',
+	'Lemon Zest': 'Lemon Zest',
 	'Lightning Dust': 'Lightning Dust',
 	'Lily Valley': 'Lily Valley',
 	'Limestone': 'Limestone',
@@ -109,6 +115,7 @@ CHARACTERS = {
 	'Louise': 'Louise',
 	'Luggage Cart': 'Luggage Cart',
 	'Luna': 'Luna',
+	'Luster Dawn': 'Luster Dawn',
 	'Lyra Heartstrings': 'Lyra Heartstrings',
 	'Lyra': 'Lyra Heartstrings',
 	'Ma Hooffield': 'Ma Hooffield',
@@ -146,6 +153,7 @@ CHARACTERS = {
 	'Night Glider': 'Night Glider',
 	'Night Light': 'Night Light',
 	'Nightmare Moon': 'Nightmare Moon',
+	'Nurse Redheart': 'Nurse Redheart',
 	'Ocean Flow': 'Ocean Flow',
 	'Ocellus': 'Ocellus',
 	'Octavia': 'Octavia',
@@ -199,9 +207,11 @@ CHARACTERS = {
 	'Somnambula': 'Somnambula',
 	"Sonata Dusk": "Sonata Dusk",
 	'Songbird Serenade': 'Songbird Serenade',
+	'Sour Sweet': 'Sour Sweet',
 	'Spike': 'Spike',
 	'Spitfire': 'Spitfire',
 	'Spoiled Rich': 'Spoiled Rich',
+	'Spur': 'Spur',
 	'Star Swirl': 'Star Swirl',
 	'Starlight': 'Starlight',
 	'Stellar Flare': 'Stellar Flare',
@@ -210,7 +220,9 @@ CHARACTERS = {
 	'Stormy Flare': 'Stormy Flare',
 	'Stygian': 'Stygian',
 	'Sugar Belle': 'Sugar Belle',
+	'Sugarcoat': 'Sugarcoat',
 	'Sunburst': 'Sunburst',
+	'Sunny Flare': 'Sunny Flare',
 	"Sunset Shimmer": "Sunset Shimmer",
 	'Surprise': 'Surprise',
 	'Svengallop': 'Svengallop',
@@ -240,6 +252,7 @@ CHARACTERS = {
 	'Verko': 'Verko',
 	"Vignette": "Vignette",
 	'Vinny': 'Vinny',
+	'Wallflower': 'Wallflower',
 	'Whinnyfield': 'Whinnyfield',
 	'Wind Rider': 'Wind Rider',
 	'Windy Whistles': 'Windy Whistles',
@@ -295,7 +308,7 @@ class ClipperLabelSet(LocalFiles):
 		LocalFiles.__init__(self, get_directory(path))
 
 	def _accept_path(self, path: str):
-		return get_name(path) in ('labels.txt', 'fim_movie.txt')
+		return get_name(path) in ('labels.txt', 'Labels.txt', 'fim_movie.txt')
 
 	def _wrap_path(self, path: str):
 		return ClipperLabels(path)
@@ -310,11 +323,16 @@ class ClipperLabelSet(LocalFiles):
 def remove_non_ascii(text):
 	return re.sub(r'[^\x00-\x7f]', '', text)
 
+def split_punctuation(text):
+	return re.sub(r'[.?!,]', ' ', text)
+
 def audio_name_from_label_line(line: str, known_paths):
 	label = line.split('\t')[-1].strip()
 	base = re.sub(r'[?]', '_', label)
 	base = remove_non_ascii(base)
-	
+	base = base.strip(' .')
+	base = base.replace('...', '.')
+
 	if base not in known_paths:
 		return base
 
@@ -352,7 +370,7 @@ def _parse_label(line):
 		'Missing noise tag {} in clipper_in.NOISE for {}'.format(noise_level, line)
 
 	# get transcript
-	transcript = label_parts[6].strip()
+	transcript = split_punctuation(label_parts[6].strip())
 	assert len(label_parts) == 7, \
 		'Excess label parts in {}'.format(line.strip())
 	
@@ -398,8 +416,7 @@ class ClipperDataset(LocalFiles):
 		audio_name = get_name(os.path.splitext(path)[0])
 		audio_name = remove_non_ascii(audio_name)
 
-		if audio_name not in self.labels and '{}.'.format(audio_name) in self.labels:
-			audio_name = '{}.'.format(audio_name)
+		audio_name = audio_name.strip('. ')
 
 		assert audio_name in self.labels, \
 			'Missing audio name {} in labels'.format(audio_name)

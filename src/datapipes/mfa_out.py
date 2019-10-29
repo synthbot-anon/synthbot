@@ -54,5 +54,9 @@ class MFAPreprocessor:
 
 		input_audio = NormalizedAudio(audio_file)
 		
+		# Montreal Forced Aligner doesn't handle dashes well...
+		# Replace them with spaces
+		transcript = transcript.replace('-', '').replace("'", '')
+
 		write_normalized_transcript(transcript, input_audio, output_transcript_path)
 		write_normalized_audio(input_audio, output_audio_path)
