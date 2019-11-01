@@ -16,8 +16,6 @@ numpy = "*"
 tqdm = "*"
 ipywidgets = "*"
 matplotlib = "*"
-
-[packages]
 praat-parselmouth = "*"
 seaborn = "*"
 
