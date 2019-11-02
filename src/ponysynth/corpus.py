@@ -31,11 +31,11 @@ class ClipperArchive:
 
 	def labels(self):
 		for key in self._tarobjects.keys():
-			yield self.read_label(key)
+			yield key, self.read_label(key)
 
 	def audio(self):
 		for key in self._tarobjects.keys():
-			yield self.read_audio(key)
+			yield key, self.read_audio(key)
 
 
 class SpeechCorpus:
@@ -46,7 +46,7 @@ class SpeechCorpus:
 	def build_phone_index(self, substrIdx=SubstringIndex):
 		self._phone_idx = substrIdx()
 
-		for label in self.archive.labels():
+		for key, label in self.archive.labels():
 			phones = [x['content'] for x in label['phones']]
 			self._phone_idx.index(phones, label)
 

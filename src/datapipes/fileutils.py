@@ -13,12 +13,16 @@ import datapipes
 NORMALIZED_AUDIO_SAMPLE_RATE = 16000
 
 class VerifiedFile:
-	def __init__(self, path: str, exists: bool = False):
+	def __init__(self, path: str, exists: bool = False, mkparents: bool = True):
 		assert not os.path.isdir(path), \
 			'file [{}] must not be a directory'.format(path)
 		assert (not exists) or os.path.exists(path), \
 			'missing file [{}]'.format(path)
 		self.path = os.path.abspath(path)
+
+		if mkparents:
+			parent = os.path.dirname(self.path)
+			os.makedirs(parent, exist_ok=True)
 
 class VerifiedDirectory:
 	def __init__(self, path: str):

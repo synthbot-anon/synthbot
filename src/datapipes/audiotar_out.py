@@ -10,7 +10,7 @@ from datapipes.fileutils import *
 from datapipes import clipper_in, mfa_in
 
 
-class TarGenerator:
+class AudioTarGenerator:
 	def __init__(self, output_dir, audio_format, sample_rate):
 		self.output_dir = VerifiedDirectory(output_dir).path
 		self.audio_format = audio_format
