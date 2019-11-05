@@ -4,7 +4,7 @@ attrs==19.3.0
 audioread==2.1.8
 backcall==0.1.0
 bleach==3.1.0
-cffi==1.13.1
+cffi==1.13.2
 coverage==5.0a8
 cycler==0.10.0
 decorator==4.4.1
@@ -39,7 +39,7 @@ notebook==6.0.1
 numba==0.46.0
 numpy==1.17.3
 packaging==19.2
-pandas==0.25.2
+pandas==0.25.3
 pandocfilters==1.4.2
 parso==0.5.1
 pexpect==4.7.0 ; sys_platform != 'win32'
@@ -50,6 +50,7 @@ praatio==3.8.0
 prometheus-client==0.7.1
 prompt-toolkit==2.0.10
 ptyprocess==0.6.0 ; os_name != 'nt'
+py-d3==0.3.0
 py==1.8.0
 pycparser==2.19
 pygments==2.4.2
@@ -58,7 +59,7 @@ pyrsistent==0.15.5
 pysoundfile==0.9.0.post1
 pytest-cov==2.8.1
 pytest==5.2.2
-python-dateutil==2.8.0
+python-dateutil==2.8.1
 pytz==2019.3
 pyzmq==18.1.0
 resampy==0.2.2
@@ -71,7 +72,7 @@ soundfile==0.10.2
 terminado==0.8.2
 testpath==0.4.2
 tornado==6.0.3
-tqdm==4.36.1
+tqdm==4.37.0
 traitlets==4.3.3
 typed-ast==1.4.0
 typing-extensions==3.7.4.1
