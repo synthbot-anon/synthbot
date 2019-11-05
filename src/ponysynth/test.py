@@ -29,14 +29,14 @@ tfds_data = tfds_data.prefetch(16)
 # create an embedding that captures local information
 # classify embeddings as "continuous" or "contains discontinuity"
 
-class SeqEncoder(snt.Module, latent_dims=2):
-    def __init__(self):
+class SeqEncoder(snt.Module):
+    def __init__(self, latent_dims=2):
         snt.Module.__init__(self, None)
         self.latent_dims = latent_dims
 
         self.prior = tfd.MultivariateNormalDiag(
             loc=tf.zeros([self.latent_dims]),
-            scale_diag=1.0)
+            scale_diag=tf.ones([self.latent_dims]))
 
     @snt.once
     def _initialize(self, inputs):
@@ -49,7 +49,7 @@ class SeqEncoder(snt.Module, latent_dims=2):
             kernel_shape=3,
             padding='SAME')
 
-        
+
 
     def __call__(self, inputs):
         self._initialize(inputs)
@@ -126,4 +126,4 @@ def _main():
 
 
 if __name__ == '__main__':
-    timeit('main', _main())
+    timeit('main', _main)
