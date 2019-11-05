@@ -148,4 +148,4 @@ if __name__ == '__main__':
 
 		args = audioinfo_parser.parse_args()
 		process_common_args(args)
-		generate_audio_info(args.input_tar, args.output_tgz)
+		generate_audio_info(args.input_tar, args.output_txz)
