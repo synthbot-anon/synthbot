@@ -37,6 +37,28 @@ class ClipperArchive:
 		for key in self._tarobjects.keys():
 			yield key, self.read_audio(key)
 
+	def keys(self):
+		return self._tarobjects.keys()
+
+
+class InfoArchive:
+	def __init__(self, archive_path):
+		self._archive = tarfile.open(archive_path, mode='r:xz')
+		self._tarobjects = _load_tar_objects(self._archive)
+
+	def read_info(self, key):
+		file = self._archive.extractfile(self._tarobjects[key]['info'])
+		data = json.loads(file.read().decode('utf-8'))
+		data['key'] = key
+		return data
+
+	def info(self):
+		for key in self._tarobjects.keys():
+			yield key, self.read_info(key)
+
+	def keys():
+		return self._tarobjects.keys()
+
 
 class SpeechCorpus:
 	def __init__(self, archive_path):
