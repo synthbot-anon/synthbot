@@ -28,7 +28,7 @@ class AudioInfoGenerator:
 		write_tardata(self.output_tar, output_info_path, info_data)
 
 	def __enter__(self):
-		self.output_tar = tarfile.open(self.output_fn, 'w:gz')
+		self.output_tar = tarfile.open(self.output_fn, 'w:xz')
 		return self
 
 	def __exit__(self, type, value, traceback):
