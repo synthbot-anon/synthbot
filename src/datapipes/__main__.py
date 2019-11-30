@@ -2,9 +2,10 @@ import os
 import argparse
 
 import datapipes
-from datapipes import clipper_in, mfa_out, mfa_in, audiotar_out, audioinfo_out
+from datapipes import (clipper_in, mfa_out, mfa_in, audiotar_out, audioinfo_out,
+	audiorecord_out)
 from datapipes.fileutils import *
-from ponysynth.corpus import ClipperArchive
+from ponysynth.corpus import ClipperArchive, InfoArchive
 
 
 def generate_mfa_inputs(clips_dir, output_dir):
@@ -65,6 +66,18 @@ def generate_audio_info(archive_fn, output_fn):
 	if datapipes.__dry_run__ or datapipes.__verbose__:
 		print('Done')
 
+def generate_audio_record(audio_archive_fn, audio_info_fn, output_fn):
+	if datapipes.__verbose__:
+		print(f'Generating {output_fn}')
+
+	record_generator = audiorecord_out.LabelRecordGenerator(VerifiedFile(output_fn))
+	audio_archive = ClipperArchive(VerifiedFile(audio_archive_fn, exists=True).path)
+	info_archive = InfoArchive(VerifiedFile(audio_info_fn, exists=True).path)
+	record_generator.generate_result(audio_archive, info_archive)
+
+	if datapipes.__dry_run__ or datapipes.__verbose__:
+		print('Done')
+
 def add_common_args(parser):
 	parser.add_argument('--verbose', required=False, action='store_true',
 			help='print status while processing files')
@@ -96,6 +109,7 @@ if __name__ == '__main__':
 	group.add_argument('--mfa-inputs', required=False, action='store_true')
 	group.add_argument('--audio-tar', required=False, action='store_true')
 	group.add_argument('--audio-info', required=False, action='store_true')
+	group.add_argument('--audio-record', required=False, action='store_true')
 
 	args = parser.parse_known_args()[0]
 	if args.mfa_inputs:
@@ -149,3 +163,20 @@ if __name__ == '__main__':
 		args = audioinfo_parser.parse_args()
 		process_common_args(args)
 		generate_audio_info(args.input_tar, args.output_txz)
+
+	elif args.audio_record:
+		audiorecord_parser = argparse.ArgumentParser(
+			description='Create a tfrecord dump of utterance labels')
+		audiorecord_parser.add_argument('--audio-record', required=True, action='store_true')
+		add_common_args(audiorecord_parser)
+
+		audiorecord_parser.add_argument('--input-audio', metavar='fn', type=str, required=True,
+			help="input folder holding a clips (tar)chive file")
+		audiorecord_parser.add_argument('--input-info', metavar='fn', type=str, required=True,
+			help="input folder holding an info (txz) archive file")
+		audiorecord_parser.add_argument('--output-tfrecord', metavar='fn', type=str, required=True,
+			help='output filename for record information')
+
+		args = audiorecord_parser.parse_args()
+		process_common_args(args)
+		generate_audio_record(args.input_audio, args.input_info, args.output_tfrecord)
