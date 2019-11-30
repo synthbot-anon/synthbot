@@ -323,9 +323,6 @@ class ClipperLabelSet(LocalFiles):
 def remove_non_ascii(text):
 	return re.sub(r'[^\x00-\x7f]', '', text)
 
-def split_punctuation(text):
-	return re.sub(r'[.?!,]', ' ', text)
-
 def audio_name_from_label_line(line: str, known_paths):
 	label = line.split('\t')[-1].strip()
 	base = re.sub(r'[?]', '_', label)
@@ -370,7 +367,7 @@ def _parse_label(line):
 		'Missing noise tag {} in clipper_in.NOISE for {}'.format(noise_level, line)
 
 	# get transcript
-	transcript = split_punctuation(label_parts[6].strip())
+	transcript = label_parts[6].strip()
 	assert len(label_parts) == 7, \
 		'Excess label parts in {}'.format(line.strip())
 	
