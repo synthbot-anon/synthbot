@@ -215,3 +215,118 @@ def _load_tar_objects(archive):
 		example[name] = item
 
 	return result
+
+
+def phoneme_transcription(label):
+	# REQ: This MUST be kept in sync with
+	# datapipes.mfa_out.normalize_transcript.
+
+	# contains phonemes and associated time intervals
+	label_phones = label['phones']
+	# contains normalized words and associated time intervals
+	label_words = label['words']
+	# contains the original transcript
+	transcript = label['utterance']['content']
+
+	# words and phones are associate with time intervals, which can be
+	# use to convert words to phonemes
+
+	# words are also normalized versions of what appears in the
+	# transcript, so they can be used to tokenize the transcription
+
+	# step 1: figure out how phonemes group into words
+	# we'll assign each phoneme to a group such that each group corresponds
+	# to a single word in the transcription
+
+	phone_groups = [] # each group will correspond to a single word
+	word_idx = 0 # index of the last unused word
+	new_group = True # True iff the next phoneme belongs to a new word
+	for ph in label_phones:
+		if ph['content'] in ('sil', 'sp'):
+			# MFA uses these to pad an utterance when intervals don't
+			# belong to any word in the transcription
+			continue
+
+		# if the current phone begins after the current word ends...
+		if ph['interval'][0] >= label_words[word_idx]['interval'][-1]:
+			# make sure the phone goes into the group associated with
+			# the next word
+			new_group = True
+			# and move onto the next word
+			word_idx += 1
+
+		# if the current phone belongs in a new group...
+		if new_group:
+			# add it to its own group (list), and append that group to
+			# phone_groups
+			phone_groups.append([ph['content']])
+			new_group = False
+		else:
+			# else add it to the current group
+			phone_groups[-1].append(ph['content'])
+
+	# sanity check: each word decomposes uniquely into a phone group
+	assert len(phone_groups) == len(label_words)
+
+	# step 2: figure out how the transcript is associated with words
+	# we'll assign each character in the transcription to a "word" such that
+	# EITHER the word can be converted directly into phonemes OR the "word"
+	# is a punctuation symbol and can be copied into the result
+
+	# normalize the transcript so they'll exactly match the MFA-output words
+	norm_transcript = transcript.replace('-', '').replace("'", '').lower()
+	new_word = True # True iff the next character belongs to a new word
+	transc_words = [] # contains each word and punctuation as a separate item...
+	punctuation_count = 0 # count for a later sanity check
+
+	for c in norm_transcript:
+		if c == ' ':
+			# make sure the next character is assigned to a new "word"
+			new_word = True
+		elif c in '.?!,':
+			# each punctuation symbol is assigned its own "word"
+			transc_words.append(c)
+			# remember this for a later sanity check
+			punctuation_count += 1
+			new_word = True
+		else:
+			if new_word:
+				# put the character into a new list item ("word")
+				transc_words.append(c)
+				new_word = False
+			else:
+				# append the character to the current "word"
+				transc_words[-1] += c
+
+	# in total, each word and each punctuation mark should be represented
+	# in word_seq
+	assert len(transc_words) == len(label_words) + punctuation_count
+
+	# step 3: convert each word in word_seq into its phoneme sequence
+	# this will be a 1-to-1 conversion of words to phonemes while retaining
+	# any punctuation "words"
+
+	# so far, we've tokenized the transcription, but we don't know if the
+	# tokenized words actually match the words recognized by MFA...
+	# we'll validate the tokens while doing the conversion
+
+	result = ''
+	word_idx = 0 # keep track of the next word we'll need to match
+	for w in transc_words:
+		if w in '.?!,':
+			# append punctuation without any conversion
+			result += w
+		elif w == label_words[word_idx]['content']:
+			# the tokenized word w matches the expected MFA word
+			# add its phoneme conversion to the result
+			conversion = ' '.join(phone_groups[word_idx])
+			result += ' {%s}' % conversion
+			# start trying to match the next MFA word
+			word_idx += 1
+		else:
+			raise Exception("tokenizing label['utterance']['content'] gives results that are inconsistent with label['words']")
+
+	# sanity check: every word should have been converted
+	assert word_idx == len(label_words)
+
+	return result.strip()
