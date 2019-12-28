@@ -13,8 +13,8 @@ OUTPUT_TRANSCRIPT_FORMAT = '.textgrid'
 def normalize_transcript(text):
 	# REQ: This MUST be kept in sync with
 	# ponysynth.corpus.phoneme_transcription.
-	
-	result = re.sub(r'[.?!,]', ' ', text)
+
+	result = re.sub(r'[.?!,;]', ' ', text)
 	result = result.replace('-', '').replace("'", '')
 	return result
 

@@ -283,7 +283,7 @@ def phoneme_transcription(label):
 		if c == ' ':
 			# make sure the next character is assigned to a new "word"
 			new_word = True
-		elif c in '.?!,':
+		elif c in '.?!,;':
 			# each punctuation symbol is assigned its own "word"
 			transc_words.append(c)
 			# remember this for a later sanity check
@@ -313,7 +313,7 @@ def phoneme_transcription(label):
 	result = ''
 	word_idx = 0 # keep track of the next word we'll need to match
 	for w in transc_words:
-		if w in '.?!,':
+		if w in '.?!,;':
 			# append punctuation without any conversion
 			result += w
 		elif w == label_words[word_idx]['content']:
