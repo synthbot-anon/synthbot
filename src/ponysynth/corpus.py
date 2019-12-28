@@ -220,6 +220,7 @@ def _load_tar_objects(archive):
 def phoneme_transcription(label):
 	# REQ: This MUST be kept in sync with
 	# datapipes.mfa_out.normalize_transcript.
+	allowed_punctuation = '.?!,;'
 
 	# contains phonemes and associated time intervals
 	label_phones = label['phones']
@@ -283,7 +284,7 @@ def phoneme_transcription(label):
 		if c == ' ':
 			# make sure the next character is assigned to a new "word"
 			new_word = True
-		elif c in '.?!,;':
+		elif c in allowed_punctuation:
 			# each punctuation symbol is assigned its own "word"
 			transc_words.append(c)
 			# remember this for a later sanity check
@@ -313,7 +314,7 @@ def phoneme_transcription(label):
 	result = ''
 	word_idx = 0 # keep track of the next word we'll need to match
 	for w in transc_words:
-		if w in '.?!,;':
+		if w in allowed_punctuation:
 			# append punctuation without any conversion
 			result += w
 		elif w == label_words[word_idx]['content']:
@@ -324,7 +325,8 @@ def phoneme_transcription(label):
 			# start trying to match the next MFA word
 			word_idx += 1
 		else:
-			raise Exception("tokenizing label['utterance']['content'] gives results that are inconsistent with label['words']")
+			raise Exception(f'transcription ("{norm_transcript}") contains an '
+				+ f'unknown word ("{w}") in {label["key"]}')
 
 	# sanity check: every word should have been converted
 	assert word_idx == len(label_words)
