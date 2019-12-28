@@ -4,49 +4,11 @@ import numpy as np
 import math
 
 
-PHONEMES = {
-	'AA': 0,
-	'AE': 1,
-	'AH': 2,
-	'AO': 3,
-	'AW': 4,
-	'AY': 5,
-	'B': 6,
-	'CH': 7,
-	'D': 8,
-	'DH': 9,
-	'EH': 10,
-	'ER': 11,
-	'EY': 12,
-	'F': 13,
-	'G': 14,
-	'HH': 15,
-	'IH': 16,
-	'IY': 17,
-	'JH': 18,
-	'K': 19,
-	'L': 20,
-	'M': 21,
-	'N': 22,
-	'NG': 23,
-	'OW': 24,
-	'OY': 25,
-	'P': 26,
-	'R': 27,
-	'S': 28,
-	'SH': 29,
-	'T': 30,
-	'TH': 31,
-	'UH': 32,
-	'UW': 33,
-	'V': 34,
-	'W': 35,
-	'Y': 36,
-	'Z': 37,
-	'ZH': 38,
-	'sil': 39,
-	'sp': 40
-}
+KNOWN_PHONEMES = set(['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 
+	'B', 'CH',  'D', 'DH', 'EH', 'ER', 'EY', 'F', 'G',
+	'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG',
+	'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH', 'UH',
+	'UW', 'V', 'W', 'Y', 'Z', 'ZH', 'sil', 'sp'])
 
 ARTICULATION_PLACES = {
 }
@@ -68,6 +30,8 @@ def _int64_feature(value):
 
 
 def get_phones(label, start, end):
+	result = set()
+
 	for phone in label['phones']:
 		phone_start = float(phone['interval'][0])
 		phone_end = float(phone['interval'][1])
@@ -76,10 +40,11 @@ def get_phones(label, start, end):
 			content = phone['content']
 			if content[-1] in ('0', '1', '2'):
 				content = content[:-1]
-			yield content
+			result.add(content)
 		# convert to place of articulation
 		# convert to manner of articulation
 
+	return result
 		
 def get_pitch(info, start, end):
 	for pitch in info['pitch']:
@@ -139,19 +104,21 @@ def _median_feature(data, default):
 		return _float_feature([1, *result])
 			
 
-def _phone_feature(phones):
+def _phone_feature(phonemes):
 	result = []
-	for phoneme in phones:
-		result.append(PHONEMES[phoneme])
+	for phm in phonemes:
+		assert phm in KNOWN_PHONEMES
+		result.append(phm.encode('utf-8'))
 	
-	return _int64_feature(result)
+	result = _bytes_feature(result)
+	return result
 
 
 def _interval_string(label, info, start, end):
 	f1, f2, f3 = get_formants(info, start, end)
 
 	feature = {
-		'phones': _phone_feature(get_phones(label, start, end)),
+		'phonemes': _phone_feature(get_phones(label, start, end)),
 		# tags
 		'pitch': _median_feature(get_pitch(info, start, end), [0, 0, 0]),
 		'intensity': _median_feature(get_intensity(info, start, end), [0, 0]),
@@ -221,14 +188,3 @@ class LabelRecordGenerator:
 			pass
 
 
-def deserialize_example(raw_record):
-	example = tf.train.Example()
-	example.ParseFromString(raw_record)
-
-	result = []
-	for interval in example.features.feature['intervals'].bytes_list.value:
-		interval_data = tf.train.Example()
-		interval_data.ParseFromString(interval)
-		result.append(interval_data)
-
-	return result
