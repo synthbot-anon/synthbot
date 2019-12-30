@@ -188,3 +188,16 @@ class LabelRecordGenerator:
 			pass
 
 
+def deserialize_example(raw_record):
+	example = tf.train.Example()
+	example.ParseFromString(raw_record)
+
+	key = example.features.feature['key'].bytes_list.value[0]
+
+	result = []
+	for interval in example.features.feature['intervals'].bytes_list.value:
+		interval_data = tf.train.Example()
+		interval_data.ParseFromString(interval)
+		result.append(interval_data)
+
+	return key, result
