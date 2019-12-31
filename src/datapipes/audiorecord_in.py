@@ -1,10 +1,24 @@
 import tensorflow as tf
 import numpy as np
-from datapipes.audiorecord_out import KNOWN_PHONEMES
+from datapipes.audiorecord_out import (
+	ALL_INDEXES, POSITION_IDX, PHONEME_IDX, PITCH_IDX, INTENSITY_IDX,
+	GCI_IDX, FORMANT_IDX, CHARACTER_IDX, TAG_IDX, NOISE_IDX)
 
-KNOWN_TAGS = KNOWN_PHONEMES
-NUM_TAGS = len(KNOWN_TAGS)
-NUM_FLOATS = 10
+
+def _get_bounds(idx):
+	values = idx.values()
+	return min(values), max(values) + 1
+
+index_start, index_end = 0, len(ALL_INDEXES)
+position_start, position_end = _get_bounds(POSITION_IDX)
+phoneme_start, phoneme_end = _get_bounds(PHONEME_IDX)
+pitch_start, pitch_end = _get_bounds(PITCH_IDX)
+intensity_start, intensity_end = _get_bounds(INTENSITY_IDX)
+gci_start, gci_end = _get_bounds(GCI_IDX)
+formant_start, formant_end = _get_bounds(FORMANT_IDX)
+character_start, character_end = _get_bounds(CHARACTER_IDX)
+tag_start, tag_end = _get_bounds(TAG_IDX)
+noise_start, noise_end = _get_bounds(NOISE_IDX)
 
 
 def deserialize_example(raw_record):
@@ -21,51 +35,12 @@ def deserialize_example(raw_record):
 
 	return key, result, len(result)
 
-def parse_floats(intervals, data_len):
-	float_features = np.zeros(shape=(data_len, NUM_FLOATS), dtype=np.float)
-	float_mask = np.zeros(shape=(data_len, NUM_FLOATS), dtype=np.float)
+def parse_sparse(intervals):
+	indexes = []
+	weights = []
 
 	for i, intvl in enumerate(intervals):
-		float_features[i,0] = intvl.features.feature['pitch'].float_list.value[1]
-		float_features[i,1] = intvl.features.feature['pitch'].float_list.value[2]
-		float_features[i,2] = intvl.features.feature['intensity'].float_list.value[1]
-		float_features[i,3] = intvl.features.feature['gci'].float_list.value[0]
-		float_features[i,4] = intvl.features.feature['f1'].float_list.value[1]
-		float_features[i,5] = intvl.features.feature['f1'].float_list.value[2]
-		float_features[i,6] = intvl.features.feature['f2'].float_list.value[1]
-		float_features[i,7] = intvl.features.feature['f2'].float_list.value[2]
-		float_features[i,8] = intvl.features.feature['f3'].float_list.value[1]
-		float_features[i,9] = intvl.features.feature['f3'].float_list.value[2]
-
-		float_mask[i,0] = intvl.features.feature['pitch'].float_list.value[0]
-		float_mask[i,1] = intvl.features.feature['pitch'].float_list.value[0]
-		float_mask[i,2] = intvl.features.feature['intensity'].float_list.value[0]
-		float_mask[i,3] = 1.0 # gci count, always present
-		float_mask[i,4] = intvl.features.feature['f1'].float_list.value[0]
-		float_mask[i,5] = intvl.features.feature['f1'].float_list.value[0]
-		float_mask[i,6] = intvl.features.feature['f2'].float_list.value[0]
-		float_mask[i,7] = intvl.features.feature['f2'].float_list.value[0]
-		float_mask[i,8] = intvl.features.feature['f3'].float_list.value[0]
-		float_mask[i,9] = intvl.features.feature['f3'].float_list.value[0]
-		
-	return float_features, float_mask
-
-def _to_strings(bytes_list):
-	return [x.decode('utf-8') for x in bytes_list]
-
-
-def parse_tags(intervals):
-	phoneme_idx_start = 0
-
-	tag_values = []
-	tag_mask = []
-
-	for i, intvl in enumerate(intervals):
-		phonemes = _to_strings(intvl.features.feature['phonemes'].bytes_list.value[:])
-		for j, phoneme in enumerate(phonemes):
-			tag_values.append(phoneme)
-			tag_mask.append((i, phoneme_idx_start + j))
-
-	return tag_values, tag_mask
-
-
+		indexes.extend([(i, x) for x in intvl.features.feature['sparse_indexes'].int64_list.value])
+		weights.extend([x for x in intvl.features.feature['sparse_weights'].float_list.value])
+	
+	return indexes, weights
