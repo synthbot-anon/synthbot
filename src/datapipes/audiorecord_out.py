@@ -9,6 +9,7 @@ from datapipes.clipper_in import CHARACTERS, TAGS, NOISE
 TOTAL_IDX = 0
 ALL_INDEXES = []
 
+
 def _index_tags(category, tags):
 	global TOTAL_IDX
 
@@ -21,39 +22,37 @@ def _index_tags(category, tags):
 
 	return result
 
+
 KNOWN_POSITIONS = set(['start', 'stop'])
 POSITION_IDX = _index_tags('position', KNOWN_POSITIONS)
-
 KNOWN_PHONEMES = set(['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 
 	'B', 'CH',  'D', 'DH', 'EH', 'ER', 'EY', 'F', 'G',
 	'HH', 'IH', 'IY', 'JH', 'K', 'L', 'M', 'N', 'NG',
 	'OW', 'OY', 'P', 'R', 'S', 'SH', 'T', 'TH', 'UH',
 	'UW', 'V', 'W', 'Y', 'Z', 'ZH', 'sil', 'sp'])
 PHONEME_IDX = _index_tags('phoneme', KNOWN_PHONEMES)
-
 PITCH_IDX = _index_tags('pitch', ['freq.hz', 'strength.corr'])
 INTENSITY_IDX = _index_tags('intensity', ['volume.db'])
 GCI_IDX = _index_tags('voicing', ['gci.count'])
 FORMANT_IDX = _index_tags('formant', [
 	'f1:centre.hz', 'f1:bandwidth.hz',
 	'f2:centre.hz', 'f2:bandwidth.hz',
-	'f3:centre.hz', 'f3:bandwidth.hz',
-])
-
+	'f3:centre.hz', 'f3:bandwidth.hz'])
 CHARACTER_IDX = _index_tags('character', 
 	[x.replace(' ', '-') for x in CHARACTERS.values()])
 TAG_IDX = _index_tags('tag', TAGS)
 NOISE_IDX = _index_tags('noise', NOISE.values())
 
 
-
 def _bytes_feature(value):
 	"""Returns a bytes_list from a string / byte."""
 	return tf.train.Feature(bytes_list=tf.train.BytesList(value=value))
 
+
 def _float_feature(value):
 	"""Returns a float_list from a float / double."""
 	return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+
 
 def _int64_feature(value):
 	"""Returns an int64_list from a bool / enum / int / uint."""
@@ -78,6 +77,7 @@ def get_phones(label, start, end):
 	# these need to be sorted to be used as sparse matrix indices
 	return sorted(result)
 
+
 def get_pitch(info, start, end):
 	for pitch in info['pitch']:
 		pitch_time = float(pitch['time.sec'])
@@ -91,6 +91,7 @@ def get_intensity(info, start, end):
 		if intensity_time >= start and intensity_time < end:
 			yield intensity['volume.db']
 
+
 def get_gcis(info, start, end):
 	result = 0
 	
@@ -100,6 +101,7 @@ def get_gcis(info, start, end):
 			result += 1
 	
 	return result
+
 
 def get_formants(info, start, end):
 	f1 = []
@@ -196,39 +198,41 @@ def _interval_string(label, info, start, end):
 		sparse_indexes.append(NOISE_IDX[label['noise']])
 		sparse_weights.append(1)
 
-	feature = {
-		'sparse_indexes': _int64_feature(sparse_indexes),
-		'sparse_weights': _float_feature(sparse_weights),
-		#'dense_weights': _float_feature(dense_weights),
-	}
-
-	example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
-	return example_proto.SerializeToString()
+	return sparse_indexes, sparse_weights
 
 
 def _clip_length(label):
 	start, end = label['utterance']['episode_interval']
 	return end - start
 
+
 def _serialize_example(key, label, info):
-	intervals = []
+	index0 = []
+	index1 = []
+	weights = []
+
 	end = _clip_length(label)
 	for i, start in enumerate(np.arange(0, end, 0.05)):
-		intervals.append(_interval_string(label, info, start, start + 0.05))
+		interval_indexes, interval_weights = _interval_string(label, info, start, start + 0.05)
+		index0.extend([i for x in interval_indexes])
+		index1.extend(interval_indexes)
+		weights.extend(interval_weights)
 
 	feature = {
 		'key': _bytes_feature([key.encode('utf-8')]),
-		'intervals': _bytes_feature(intervals)
+		'shape': _int64_feature([i+1, len(ALL_INDEXES)]),
+		'index0': _int64_feature(index0),
+		'index1': _int64_feature(index1),
+		'weights': _float_feature(weights)
 	}
 
 	example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
 	return example_proto.SerializeToString()
 
-serialize_example = _serialize_example
 
 class LabelRecordGenerator:
-	def __init__(self, output_file, clips_per_shard=24000):
-		self.path = output_file.path
+	def __init__(self, output_path, clips_per_shard=24000):
+		self.path = output_path
 		self.clips_per_shard = clips_per_shard
 
 	def generate_result(self, audio_archive, info_archive):

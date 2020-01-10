@@ -3,7 +3,7 @@ import argparse
 
 import datapipes
 from datapipes import (clipper_in, mfa_out, mfa_in, audiotar_out, audioinfo_out,
-	audiorecord_out)
+	audiorecord_out, dictionary_out)
 from datapipes.fileutils import *
 from ponysynth.corpus import ClipperArchive, InfoArchive
 
@@ -12,6 +12,9 @@ def generate_mfa_inputs(clips_dir, output_dir):
 	aligner = mfa_out.MFAPreprocessor(clips_dir, output_dir)
 
 	for clip in clipper_in.ClipperDataset(clips_dir).get_files():
+		if clip.reference == None:
+			continue
+
 		try:
 			audio_file = VerifiedFile(clip.audio_path, exists=True)
 
@@ -27,6 +30,7 @@ def generate_mfa_inputs(clips_dir, output_dir):
 
 	if datapipes.__dry_run__ or datapipes.__verbose__:
 		print('Done')
+	
 
 def generate_audio_tar(clips_dir, alignments_dir, output_dir, 
 		audio_format, sample_rate):
@@ -66,17 +70,42 @@ def generate_audio_info(archive_fn, output_fn):
 	if datapipes.__dry_run__ or datapipes.__verbose__:
 		print('Done')
 
-def generate_audio_record(audio_archive_fn, audio_info_fn, output_fn):
+def generate_labels_record(audio_archive_fn, audio_info_fn, output_fn):
 	if datapipes.__verbose__:
 		print(f'Generating {output_fn}')
 
-	record_generator = audiorecord_out.LabelRecordGenerator(VerifiedFile(output_fn))
+	record_generator = audiorecord_out.LabelRecordGenerator(VerifiedFile(output_fn).path)
 	audio_archive = ClipperArchive(VerifiedFile(audio_archive_fn, exists=True).path)
 	info_archive = InfoArchive(VerifiedFile(audio_info_fn, exists=True).path)
 	record_generator.generate_result(audio_archive, info_archive)
 
 	if datapipes.__dry_run__ or datapipes.__verbose__:
 		print('Done')
+
+
+def generate_dictionary(include, clipper_path, output_path):
+	if datapipes.__verbose__:
+		print('Generating dictionaries')
+
+	clipper_files = clipper_in.ClipperDataset(clipper_path).get_files()
+	dictionary_generator = dictionary_out.DictionaryGenerator(
+		VerifiedDirectory(output_path).path)
+	for dictionary in include:
+		if datapipes.__verbose__:
+			print(f'adding words from {dictionary}')
+		dictionary_generator.update(VerifiedFile(dictionary, exists=True).path)
+
+	if datapipes.__verbose__:
+		print(f'found {len(dictionary_generator.dictionary)} words')
+		print(f'checking {len(clipper_labels)} clips')
+
+	dictionary_generator.check_transcripts(clipper_files)
+	dictionary_generator.generate_result()
+
+	if datapipes.__dry_run__ or datapipes.__verbose__:
+		print('Done')
+
+
 
 def add_common_args(parser):
 	parser.add_argument('--verbose', required=False, action='store_true',
@@ -109,7 +138,8 @@ if __name__ == '__main__':
 	group.add_argument('--mfa-inputs', required=False, action='store_true')
 	group.add_argument('--audio-tar', required=False, action='store_true')
 	group.add_argument('--audio-info', required=False, action='store_true')
-	group.add_argument('--audio-record', required=False, action='store_true')
+	group.add_argument('--labels-tfrecord', required=False, action='store_true')
+	group.add_argument('--dictionary', required=False, action='store_true')
 
 	args = parser.parse_known_args()[0]
 	if args.mfa_inputs:
@@ -164,19 +194,36 @@ if __name__ == '__main__':
 		process_common_args(args)
 		generate_audio_info(args.input_tar, args.output_txz)
 
-	elif args.audio_record:
-		audiorecord_parser = argparse.ArgumentParser(
+	elif args.labels_tfrecord:
+		labelsrecord_parser = argparse.ArgumentParser(
 			description='Create a tfrecord dump of utterance labels')
-		audiorecord_parser.add_argument('--audio-record', required=True, action='store_true')
-		add_common_args(audiorecord_parser)
+		labelsrecord_parser.add_argument('--labels-tfrecord', required=True, action='store_true')
+		add_common_args(labelsrecord_parser)
 
-		audiorecord_parser.add_argument('--input-audio', metavar='fn', type=str, required=True,
+		labelsrecord_parser.add_argument('--input-labels', metavar='fn', type=str, required=True,
 			help="input folder holding a clips (tar)chive file")
-		audiorecord_parser.add_argument('--input-info', metavar='fn', type=str, required=True,
+		labelsrecord_parser.add_argument('--input-info', metavar='fn', type=str, required=True,
 			help="input folder holding an info (txz) archive file")
-		audiorecord_parser.add_argument('--output-tfrecord', metavar='fn', type=str, required=True,
+		labelsrecord_parser.add_argument('--output-tfrecord', metavar='fn', type=str, required=True,
 			help='output filename for record information')
 
-		args = audiorecord_parser.parse_args()
+		args = labelsrecord_parser.parse_args()
 		process_common_args(args)
-		generate_audio_record(args.input_audio, args.input_info, args.output_tfrecord)
+		generate_labels_record(args.input_labels, args.input_info, args.output_tfrecord)
+
+	elif args.dictionary:
+		dictionary_parser = argparse.ArgumentParser(
+			description='Create a merged dictionary')
+		dictionary_parser.add_argument('--dictionary', required=True, action='store_true')
+		add_common_args(dictionary_parser)
+
+		dictionary_parser.add_argument('--include', metavar='fn', type=str, required=True,
+			help="dictionary to include in the result", nargs='+')
+		dictionary_parser.add_argument('--clipper-path', metavar='fn', type=str, required=True,
+			help="folder containing clipper samples for completeness checks")
+		dictionary_parser.add_argument('--output-path', metavar='fn', type=str, required=True,
+			help='output path for the dictionary')
+
+		args = dictionary_parser.parse_args()
+		process_common_args(args)
+		generate_dictionary(args.include, args.clipper_path, args.output_path)

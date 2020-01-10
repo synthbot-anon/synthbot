@@ -104,7 +104,9 @@ class LocalFiles:
 
 		for path in matching_paths:
 			try:
-				yield self._wrap_path(path)
+				result = self._wrap_path(path)
+				if result != None:
+					yield result
 			except AssertionError as e:
 				if not datapipes.__dry_run__:
 					raise
