@@ -56,7 +56,7 @@ class InfoArchive:
         for key in self._tarobjects.keys():
             yield key, self.read_info(key)
 
-    def keys():
+    def keys(self):
         return self._tarobjects.keys()
 
 
