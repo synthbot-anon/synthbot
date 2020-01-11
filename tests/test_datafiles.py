@@ -8,17 +8,15 @@ from ponysynth.corpus import ClipperArchive, InfoArchive, phoneme_transcription
 from datapipes.fileutils import get_name
 
 ARCHIVE_PATHS = '/home/celestia/data/audio-tar/*'
-COOKIE_PATHS = '/home/celestia/data/audio-trimmed-22khz/*'
+SAMPLE_RATE = 48000
+
 EXTRA_PATHS = '/home/celestia/data/audio-info/*'
+
+COOKIE_PATHS = '/home/celestia/data/audio-trimmed-22khz/*'
+COOKIE_RATE = 22050
+
 OOV_PATHS = '/home/celestia/data/mfa-alignments/*/oovs_found.txt'
 ALIGNMENT_PATHS = '/home/celestia/data/mfa-alignments/*'
-
-SAMPLE_RATE = 48000
-archives = None
-extras = None
-
-COOKIE_RATE = 22050
-cookie_archives = None
 
 
 @pytest.fixture
@@ -29,6 +27,11 @@ def archives():
 @pytest.fixture
 def extras():
     return load_extras(glob.glob(EXTRA_PATHS))
+
+
+@pytest.fixture
+def cookie_archives():
+    return load_archives(glob.glob(COOKIE_PATHS))
 
 
 def load_archives(paths):
@@ -58,17 +61,18 @@ def load_extras(paths):
 def test_archives(archives):
     for archive in archives.values():
         assert_valid_archive(archive)
+        assert_valid_audio(archive, SAMPLE_RATE)
 
 
-def test_cookie_clips():
+def test_cookie_clips(cookie_archives):
     for archive in cookie_archives.values():
         assert_valid_archive(archive)
+        assert_valid_audio(archive, COOKIE_RATE)
 
 
 def assert_valid_archive(archive):
     for key, label in archive.labels():
         assert_valid_label(key, label)
-        assert_valid_audio(key, label, archive.read_audio(key))
     assert key != None
 
 
@@ -103,11 +107,12 @@ def assert_valid_transcript(label):
     assert label['utterance']['content'] != ''
 
 
-def assert_valid_audio(key, label, audio):
-    samples, rate = librosa.core.load(audio, sr=None)
-    assert rate == SAMPLE_RATE
-    assert len(samples) > SAMPLE_RATE * 0.15, \
-     f'found a very short clip: {key}'
+def assert_valid_audio(archive, expected_rate):
+    for key, audio in archive.audio():
+        samples, rate = librosa.core.load(audio, sr=None)
+        assert rate == expected_rate
+        assert len(samples) > rate * 0.15, \
+         f'found a very short clip: {key}'
 
 
 def test_phoneme_transcriptions(archives):
