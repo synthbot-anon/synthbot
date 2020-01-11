@@ -1,9 +1,8 @@
 # Getting started
 This file walks you through the setting up a development environment for synthbot. This means:
 1. Setting up your directory structure,
-2. Running the docker image,
-3. Running the dev environment, and
-4. Best practices I've found.
+2. Running the docker image, and
+3. Running the dev environment.
 
 ## Setting up the directory structure
 Step up your project directory:
@@ -21,7 +20,7 @@ mkdir data/clipper-samples
 mkdir data/dictionaries
 ```
 
-Make sure you've downloaded and (if needed) extracted Clipper's Master File 2.0 into the `data/clipper-samples` directory. Make sure you've also downloaded `cmudict-0.7b.txt`, `librispeech.txt`, and `horsewords.txt`, and placed then within the `data/dictionaries` directory.
+Make sure you've downloaded and (if needed) extracted Clipper's Master File 2.0 into the `data/clipper-samples` directory. Make sure you've also downloaded `cmudict-0.7b.txt`, `librispeech.txt`, and `horsewords.txt`, and placed them within the `data/dictionaries` directory.
 
 Within `soundtools/`, your directory structure should now look something like this:
 ```
@@ -75,6 +74,3 @@ Walking through the `docker run` command line arguments:
 * `-it synthbot/soundtools:latest` drops you into an interactive shell in the `synthbot/soundtools:latest` container hosted on [Docker Hub](https://hub.docker.com).
 
 And you're set up! When the container starts, it will give you a `127.0.0.1:8888` URL you can open in your browser (outside of the container). The next step is to open the Jupyter URL in a browser, navigate to the `notebooks/` directory, and run through `Preprocess data.ipynb`. This will walk you through preprocessing the data.
-
-## Best practices
-
