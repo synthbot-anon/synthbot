@@ -12,6 +12,7 @@ import soundfile
 import numpy
 
 from ponysynth.indexes import SubstringIndex
+from ponysynth.clipbot import ClipBot
 
 
 class ClipperArchive:
@@ -39,6 +40,14 @@ class ClipperArchive:
 
     def keys(self):
         return self._tarobjects.keys()
+
+    def sample(self, k=1):
+    	return random.sample(self._tarobjects.keys(), k=k)
+
+    def clipbot(self, key):
+    	samples, rate = librosa.core.load(self.read_audio(key), sr=None)
+    	label = self.read_label(key)
+    	return ClipBot(samples, rate, label)
 
 
 class InfoArchive:
