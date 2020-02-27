@@ -19,6 +19,8 @@ matplotlib = "*"
 praat-parselmouth = "*"
 seaborn = "*"
 py-d3 = "*"
+cython = "*"
+lark-parser = "*"
 
 [requires]
 python_version = "3.6"
