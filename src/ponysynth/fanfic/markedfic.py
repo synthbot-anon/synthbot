@@ -105,7 +105,7 @@ class CookieSynthTokenizer(Visitor):
     This is conceptually the same as:
 
         segment = parser.getStorySegment(5017, 5029) # "Next time,"
-        segment.character = "Twilight Sparkle"
+        segment.character.id = "Twilight Sparkle"
 
     As a shorthand, a type and properties can be assigned in the same
     tag.
@@ -116,8 +116,8 @@ class CookieSynthTokenizer(Visitor):
     segment properties. For example:
 
         twilight = parser.at(0).get("character", "Twilight")
-        twilight["voice"] = "nasally contralto scale"
-        twilight["color"] = "purple"
+        twilight.voice = "nasally contralto scale"
+        twilight.color = "purple"
 
     This can be done with the following [meta] tag at the beginning of the
     story (i.e., at position 0):
@@ -132,6 +132,7 @@ class CookieSynthTokenizer(Visitor):
         segment = parser.getStorySegment(5017, 5029)
         # segment.character.id == "Twilight"
         # segment.character.voice == "nasally contralto scale"
+        # segment.character.color == "purple"
 
     A [meta] tag begins taking effects at the position where it is declared,
     and it retains its effects until a new [meta] tag overrides the same
