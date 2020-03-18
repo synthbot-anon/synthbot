@@ -224,7 +224,7 @@ def _load_tar_objects(archive):
 def phoneme_transcription(label):
     # REQ: This MUST be kept in sync with
     # datapipes.mfa_out.normalize_transcript.
-    allowed_punctuation = '.?!,;'
+    allowed_punctuation = '.?!,;"'
 
     # contains phonemes and associated time intervals
     label_phones = label['phones']
