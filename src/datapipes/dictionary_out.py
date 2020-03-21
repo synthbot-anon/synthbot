@@ -37,8 +37,10 @@ class DictionaryGenerator:
 
                 phonemes = pronunciation.split()[1:]
                 for ph in phonemes:
-                    assert ph in ALLOWED_PHONEMES, \
-                     f'Invalid pronunciation {pronunciation} in {dictionary_path}'
+                    assert ph in ALLOWED_PHONEMES, (
+                        f'Invalid pronunciation '
+                        f'{pronunciation} in {dictionary_path}. Allowed phonemes '
+                        f'are: {ALLOWED_PHONEMES}')
 
                 if pronunciation == word:
                     print('Missing pronunciation for {} in {}'.format(
