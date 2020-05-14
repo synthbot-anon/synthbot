@@ -3,6 +3,8 @@ import numpy
 import scipy
 import matplotlib.pyplot as plt
 from IPython import display as ipd
+import json
+import re
 
 class ClipBot:
 	def __init__(self, samples, rate):
@@ -13,7 +15,6 @@ class ClipBot:
 		self.start_idx = 0
 		self.end_time = len(samples) / float(rate)
 		self.end_idx = len(samples)
-
 
 		self.draw = ClipDrawBot(self)
 		self.mod = ClipModBot(self)
@@ -105,7 +106,7 @@ class ClipModBot:
 		print('bounds:', bounds)
 		print('samples:', samples.shape)
 		print('composed:', composed.shape)
-		self.clip.base_samples[bounds] = numpy.real(composed)
+		self.clip.base_samples[bounds] = 0 #numpy.real(composed)
 
 		return composed
 
@@ -147,3 +148,6 @@ class ClipDrawBot:
 	# 		plt.text((middle
 
 
+# TODO: create file for sampling?
+# TODO: create file for visuals with backend abstracted?
+# TODO: create file for managing metrics?

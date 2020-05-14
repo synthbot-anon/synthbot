@@ -3,7 +3,7 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
-[dev-packages]
+[packages]
 mypy = "*"
 pytest = "*"
 pytest-cov = "*"
@@ -15,15 +15,10 @@ pysoundfile = "*"
 numpy = "*"
 tqdm = "*"
 ipywidgets = "*"
-matplotlib = "*"
 praat-parselmouth = "*"
-seaborn = "*"
-py-d3 = "*"
 cython = "*"
 lark-parser = "*"
-
-[requires]
-python_version = "3.6"
+nltk = "*"
 
 [pipenv]
 allow_prereleases = true
