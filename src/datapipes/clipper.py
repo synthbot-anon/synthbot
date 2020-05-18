@@ -84,6 +84,7 @@ class PonySorterFile:
 
 @dataclasses.dataclass
 class AudacityRecord:
+    audacity_file: "AudacityFile"
     label: str
     start: float
     end: float
@@ -108,7 +109,7 @@ class AudacityFile(object):
                     data = clipper_utils.load_audacity_data(
                         self.context, line_data.strip(), self.filepath
                     )
-                    yield AudacityRecord(**data)
+                    yield AudacityRecord(self, **data)
                 except Exception as error:
                     print("Error:", str(error))
                     print("\tfile:", self.filepath)
