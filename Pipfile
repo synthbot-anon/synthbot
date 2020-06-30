@@ -19,6 +19,7 @@ praat-parselmouth = "*"
 cython = "*"
 lark-parser = "*"
 nltk = "*"
+pandas = "*"
 
 [pipenv]
 allow_prereleases = true
