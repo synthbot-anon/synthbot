@@ -1,6 +1,8 @@
+import dataclasses
 import itertools
 import json
 import os
+import tqdm
 
 
 class Dataset(object):
@@ -50,4 +52,35 @@ def parse_name(path: str):
 
 
 def parse_parent_path(path: str):
+    path = os.path.normpath(path)
     return os.path.dirname(path)
+
+
+class VerboseLogger:
+    def tqdm(self, *args, **kwargs):
+        return tqdm.tqdm(*args, **kwargs)
+
+    def print(self, *args, **kwargs):
+        print(*args, **kwargs)
+
+
+class _TqdmNoop:
+    def __init__(self, iterable=None, **kwargs):
+        self.iterable = iterable
+    def __iter__(self):
+        return iter(self.iterable)
+
+
+class NoopLogger:
+    def tqdm(self, *args, **kwargs):
+        return _TqdmNoop(*args, **kwargs)
+
+    def print(self, *args, **kwargs):
+        pass
+
+def logger(verbose):
+    if verbose:
+        return VerboseLogger()
+    else:
+        return NoopLogger()
+        

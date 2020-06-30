@@ -132,11 +132,13 @@ def mlp_dialogue_dataset(clipper_root):
     params = MlpDialogueParams(clipper_root)
     dataset = datapipes.clipper.ClipperSet(params)
 
+    print('warning: ignoring ponysorter files')
     for entry in os.scandir(f"{clipper_root}/Reviewed episodes"):
         if not entry.is_file():
             print(f"Unexpected directory: Reviewed episodes/{entry.name}")
             continue
-        dataset.load_ponysorter(entry.path)
+        #dataset.load_ponysorter(entry.path)
+        pass
 
     clip_directories = [
         f"{clipper_root}/Sliced Dialogue/EQG",
@@ -167,7 +169,7 @@ def mlp_dialogue_dataset(clipper_root):
             continue
         if not entry.name.endswith(".txt"):
             continue
-            
+
         dataset.load_audacity(entry.path)
 
     dataset.load_audacity(f"{clipper_root}/Sliced Dialogue/MLP Movie/labels.txt")
@@ -254,6 +256,7 @@ def extra_dialogue_dataset(clipper_root):
                     "Converted.txt",
                     "Converted (1).txt",
                     "Note on these Discord lines.txt",
+                    'Dr. Who Dictionary.txt'
                 ):
                     continue
 
