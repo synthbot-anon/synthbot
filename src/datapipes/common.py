@@ -67,6 +67,7 @@ class VerboseLogger:
 class _TqdmNoop:
     def __init__(self, iterable=None, **kwargs):
         self.iterable = iterable
+
     def __iter__(self):
         return iter(self.iterable)
 
@@ -78,9 +79,9 @@ class NoopLogger:
     def print(self, *args, **kwargs):
         pass
 
+
 def logger(verbose):
     if verbose:
         return VerboseLogger()
     else:
         return NoopLogger()
-        

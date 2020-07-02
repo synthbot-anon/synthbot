@@ -601,7 +601,6 @@ SOURCES = {
     "Sliced Dialogue/Other/Mobile game/Rainbow Dash": "mobile game:rainbow dash",
     "Sliced Dialogue/Other/Mobile game/Rarity": "mobile game:rarity",
     "Sliced Dialogue/Other/Mobile game/Spike": "mobile game:spike",
-
     "Sliced Dialogue/Label files/eqg_better together_s02e04.txt": "eqg:s2e4",
     "Sliced Dialogue/Label files/eqg_better together_s02e05.txt": "eqg:s2e5",
     "Sliced Dialogue/Label files/eqg_better together_s02e06.txt": "eqg:s2e6",
@@ -1290,7 +1289,6 @@ SOURCES = {
     "Sliced Dialogue/Label files/mobile game_ra.txt": "mobile game:rarity",
     "Sliced Dialogue/Label files/mobile game_rd.txt": "mobile game:rainbow dash",
     "Sliced Dialogue/Label files/mobile game_spike.txt": "mobile game:spike",
-
     "Reviewed episodes/eqg_friendship_games.json": "eqg:friendship games",
     "Reviewed episodes/eqg_legend_of_everfree.json": "eqg:legend of everfree",
     "Reviewed episodes/eqg_original_movie.json": "eqg:original",

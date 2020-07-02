@@ -132,12 +132,12 @@ def mlp_dialogue_dataset(clipper_root):
     params = MlpDialogueParams(clipper_root)
     dataset = datapipes.clipper.ClipperSet(params)
 
-    print('warning: ignoring ponysorter files')
+    print("warning: ignoring ponysorter files")
     for entry in os.scandir(f"{clipper_root}/Reviewed episodes"):
         if not entry.is_file():
             print(f"Unexpected directory: Reviewed episodes/{entry.name}")
             continue
-        #dataset.load_ponysorter(entry.path)
+        # dataset.load_ponysorter(entry.path)
         pass
 
     clip_directories = [
@@ -256,7 +256,7 @@ def extra_dialogue_dataset(clipper_root):
                     "Converted.txt",
                     "Converted (1).txt",
                     "Note on these Discord lines.txt",
-                    'Dr. Who Dictionary.txt'
+                    "Dr. Who Dictionary.txt",
                 ):
                     continue
 
