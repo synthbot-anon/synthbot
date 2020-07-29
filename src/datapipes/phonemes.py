@@ -79,7 +79,7 @@ ALLOWED_PHONEMES = set(
 )
 
 
-class HorseWords:
+class PhoneticDictionary:
     def __init__(self):
         self.dictionary = {}
 
@@ -104,7 +104,7 @@ class HorseWords:
                     continue
 
                 # line format: word phm1 phm2 phm3 ...
-                separated = line.split(" ")
+                separated = line.split()
                 word = separated[0]
                 phonemes = list(filter(lambda x: x, separated[1:]))
 
@@ -136,8 +136,12 @@ class HorseWords:
 
         return pandas.DataFrame(result, columns=["word", "pronunciation"])
 
-    def aug_phoneme_transcriptions(self, audio):
-        pass
+    def dict(self):
+        result = {}
+        for row in self.pandas().itertuples():
+            result[row.word] = row.pronunciation
+
+        return result
 
     def debugger(self, output_path):
         return HorseWordsDebugger(self.dictionary, output_path)
@@ -152,9 +156,8 @@ class HorseWordsDebugger:
             os.makedirs(output_path)
         else:
             if not os.path.isdir(output_path):
-                print(f'Warning: some file already exists at path {output_path}')
+                print(f"Warning: some file already exists at path {output_path}")
                 self.output_path = None
-
 
     def check_transcripts(self, audio, verbose=True):
         missing_data = []
@@ -169,45 +172,93 @@ class HorseWordsDebugger:
                     continue
 
                 if word_lookup not in self.dictionary:
-                    new_filename = f'{word.upper()} - {data.transcript}'
+                    new_filename = f"{word.upper()} - {data.transcript}"
                     self.copy_file(data.audio_path, new_filename)
 
-                    missing_data.append([word, data.source, data.start, data.transcript])
+                    missing_data.append(
+                        [word, data.source, data.start, data.transcript]
+                    )
 
-        result = pandas.DataFrame(missing_data, columns=['missing_word', 'source', 'start', 'transcript'])
-        result.sort_values(['source', 'start'])
+        result = pandas.DataFrame(
+            missing_data, columns=["missing_word", "source", "start", "transcript"]
+        )
+        result.sort_values(["source", "start"])
         return result
-
-                    
 
     def copy_file(self, old_path, new_name):
         extension = os.path.splitext(old_path)[1]
-        shutil.copyfile(old_path, f'{self.output_path}/{new_name}{extension}')
+        shutil.copyfile(old_path, f"{self.output_path}/{new_name}{extension}")
 
 
-class PhonemeTranscriberParams:
-    pass
+def create_arpa_converter(dictionary):
+    def arpa(text):
+        out = ""
+        for word_ in text.split(" "):
+            word = word_
+            end_chars = ""
+            while any(elem in word for elem in r"!?,.;") and len(word) > 1:
+                if word[-1] == "!":
+                    end_chars = "!" + end_chars
+                    word = word[:-1]
+                if word[-1] == "?":
+                    end_chars = "?" + end_chars
+                    word = word[:-1]
+                if word[-1] == ",":
+                    end_chars = "," + end_chars
+                    word = word[:-1]
+                if word[-1] == ".":
+                    end_chars = "." + end_chars
+                    word = word[:-1]
+                if word[-1] == ";":
+                    end_chars = ";" + end_chars
+                    word = word[:-1]
+                else:
+                    break
+            try:
+                word_arpa = dictionary[word.upper()]
+            except:
+                word_arpa = ""
+            if len(word_arpa) != 0:
+                word = "{" + str(word_arpa) + "}"
+            out = (out + " " + word + end_chars).strip()
+        return out
+
+    return arpa
 
 
-class PhonemeTranscriber:
-    def __init__(self, params=None):
-        self.params = params
-        self.dictionary = pandas.DataFrame()
+class CookiePhonemeTranscriber:
+    def __init__(self):
+        self.dictionary = {}
+        self.transcripts = []
 
     def load_phoneme_dict(self, pandas):
-        self.dictionary = pandas.concat(self.dictionary, pandas)
-
-    def load_mfa_alignments(self, alignments):
-        pass
+        for row in pandas.itertuples():
+            self.dictionary[row.word] = row.pronunciation
 
     def load_transcripts(self, pandas):
-        pass
-
-    def load_oovs(self, oovs_file):
-        pass
+        self.transcripts.append(pandas)
 
     def pandas(self, verbose=True, all_files=False):
-        pass
+        arpa_converter = create_arpa_converter(self.dictionary)
+        result = []
+
+        transcripts = pandas.concat(self.transcripts)
+
+        def _gen():
+            for row in transcripts.itertuples():
+                yield row.Index, arpa_converter(row.transcript)
+
+        frame = pandas.DataFrame(_gen(), columns=["index", "phonemes"])
+        frame.set_index("index", inplace=True, drop=True)
+        return frame
+
+    def augment(self):
+        transcripts = pandas.concat(self.transcripts)
+        phonemes = self.pandas()
+
+        return pandas.merge(
+            transcripts, phonemes, how="right", left_index=True, right_index=True
+        )
 
     def debugger(self):
         pass

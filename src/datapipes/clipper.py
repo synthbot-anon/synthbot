@@ -167,6 +167,10 @@ def coarsen_timestamp(t):
     return CoarseTimestamp(hh, mm, ss)
 
 
+def timestamp_to_seconds(t):
+    return 60.0 * (60 * t.hour + t.minute) + t.second
+
+
 class AudioFile:
     def __init__(self, filepath, params):
         self.filepath = filepath
@@ -181,7 +185,7 @@ class AudioFile:
         filename = datapipes.common.parse_name(self.filepath)
         match = re.match(r"^([0-9]+)_([0-9]+)_([0-9]+)_.*$", filename)
         if match:
-            return CoarseTimestamp(*match.groups())
+            return CoarseTimestamp(*[float(x) for x in match.groups()])
 
     def transcript_reference(self):
         label_reference = self.label_reference()
@@ -222,7 +226,7 @@ class TranscriptFile:
 
     def character_reference(self):
         filename = datapipes.common.parse_name(self.filepath)
-        match = re.match(r"^([^_]*)_(?:[^_]*_){5}.*$", filename)
+        match = re.match(r"^(?:[^_]*_){3}([^_]*)_.*$", filename)
         if match:
             return self.params.characters(match.group(1), self.filepath)
 
@@ -239,6 +243,28 @@ class TranscriptFile:
         normpath = os.path.normpath(self.filepath)
         dirpath = os.path.dirname(normpath)
         return self.params.sources(dirpath, normpath)
+
+    def timestamp_reference(self):
+        filename = datapipes.common.parse_name(self.filepath)
+        match = re.match(r"^([0-9]+)_([0-9]+)_([0-9]+)_.*$", filename)
+        if match:
+            return CoarseTimestamp(*[float(x) for x in match.groups()])
+
+    def tag_references(self):
+        filename = datapipes.common.parse_name(self.filepath)
+        match = re.match(r"^(?:[^_]*_){4}([^_]*)_.*$", filename)
+
+        if match:
+            tags = match.group(1)
+            if tags == "Canterlot Voice":
+                return self.params.tags("Canterlot Voice", self.filepath)
+            else:
+                return [self.params.tags(x, self.filepath) for x in tags.split()]
+
+    def noise_reference(self):
+        filename = datapipes.common.parse_name(self.filepath)
+        match = re.match(r"^(?:[^_]*_){5}([^_]*)_.*$", filename)
+        return self.params.noise_levels(match.group(1), self.filepath)
 
     def transcript(self):
         if self._transcript:
@@ -286,6 +312,15 @@ class ClipperRecord:
             fields["tags"] = record.tags
             fields["noise"] = record.noise
             fields["transcript"] = record.transcript.replace("’", "'")
+        elif self.transcript:
+            fields["character"] = self.transcript.character_reference()
+            fields["source"] = self.transcript.source_reference()
+            fields["start"] = timestamp_to_seconds(
+                self.transcript.timestamp_reference()
+            )
+            fields["tags"] = self.transcript.tag_references()
+            fields["noise"] = self.transcript.noise_reference()
+            fields["transcript"] = self.transcript.transcript()
 
         if self.audio:
             fields["audio_path"] = self.audio.filepath
@@ -333,7 +368,7 @@ class ClipperSet:
     def load_transcript(self, filepath):
         self.transcript_files.append(TranscriptFile(filepath, self.params))
 
-    def pandas(self, verbose=True, all_files=False):
+    def pandas(self, verbose=True):
         result = {}
         progress_bar = lambda x, desc: x
         logger = datapipes.common.logger(verbose)
@@ -371,31 +406,30 @@ class ClipperSet:
                 known_records = result.setdefault(key, ClipperRecord())
                 known_records.audacity_records[processor_reference] = audacity_record
 
-        if all_files:
-            # NOTE: these are ignored by default because they don't match the audacity
-            # files
-            for ponysorter_file in logger.tqdm(
-                self.ponysorter_files, desc="Scanning ponysorter files"
-            ):
-                source_reference = ponysorter_file.source_reference()
+        # NOTE: these are ignored by default because they don't match the audacity
+        # files
+        # for ponysorter_file in logger.tqdm(
+        #     self.ponysorter_files, desc="Scanning ponysorter files"
+        # ):
+        #     source_reference = ponysorter_file.source_reference()
 
-            for ponysorter_record in ponysorter_file.records():
-                label_reference = ponysorter_record.label_reference()
+        #     for ponysorter_record in ponysorter_file.records():
+        #         label_reference = ponysorter_record.label_reference()
 
-                key = ClipperKey(source_reference, label_reference)
-                result.setdefault(
-                    key, ClipperRecord()
-                ).ponysorter_record = ponysorter_record
+        #         key = ClipperKey(source_reference, label_reference)
+        #         result.setdefault(
+        #             key, ClipperRecord()
+        #         ).ponysorter_record = ponysorter_record
 
         verbose_records = logger.tqdm(result.values(), desc="Creating dataframe")
 
         def _filter_records():
             for record in verbose_records:
                 # ignore incomplete records unless the caller requested all files
-                if record.audacity_records and record.audio:
-                    yield record
-                elif all_files:
-                    yield record
+                # if record.audacity_records and record.audio:
+                #     yield record
+                # elif all_files:
+                yield record
 
         return pandas.DataFrame([x.panda() for x in _filter_records()])
 
