@@ -51,7 +51,7 @@ prometheus-client==0.7.1
 prompt-toolkit==3.0.2
 ptyprocess==0.6.0 ; os_name != 'nt'
 py-d3==0.3.0
-py==1.8.1
+py==1.10.0
 pycparser==2.19
 pygments==2.5.2
 pyparsing==2.4.6
