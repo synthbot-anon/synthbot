@@ -35,7 +35,7 @@ mypy-extensions==0.4.3
 mypy==0.761
 nbconvert==6.0.0a0
 nbformat==4.4.0
-notebook==6.0.2
+notebook==6.4.10
 numba==0.47.0
 numpy==1.18.0
 packaging==20.0
