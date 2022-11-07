@@ -70,11 +70,11 @@ class MfaDictionaryGenerator:
             return [dictionary_path, 'g2p_dictionary', character]
 
         result = Parallel(n_jobs=-1)(
-            delayed(generate_dictionary)(row)
-            for row in tqdm.tqdm(self.corpus.itertuples(),
-                                 "Generating character dictionary"))
+            delayed(generate_dictionary)(row) for row in tqdm.tqdm(
+                self.corpus.itertuples(), "Generating character dictionary"))
 
-        return pandas.DataFrame(result, columns=['path', 'contents', 'character'])
+        return pandas.DataFrame(result,
+                                columns=['path', 'contents', 'character'])
 
     def dump_g2p_model(self, path):
         train_dictionary_path = f"{path}/training_dictionary.txt"
@@ -125,8 +125,10 @@ class MfaCorpus:
     def dump(self, path):
         os.makedirs(path, exist_ok=True)
         transcript_data = pandas.concat(self.transcribed_audio)
-        transcript_data = transcript_data[transcript_data['audio_path'].notna()]
-        transcript_data = transcript_data[transcript_data['transcript'].notna()]
+        transcript_data = transcript_data[
+            transcript_data['audio_path'].notna()]
+        transcript_data = transcript_data[
+            transcript_data['transcript'].notna()]
 
         total_count = transcript_data.shape[0]
         characters = set()
@@ -135,7 +137,7 @@ class MfaCorpus:
             os.makedirs(f"{path}/{character}/", exist_ok=True)
             characters.add(character)
 
-        def convert(row):
+        def _dump_single(row):
             # MFA expects each character's corpus to be placed in a separate sub-directory
             # and the corpus to consisted of paired files file1.textgrid, file1.wav, ...
             # where the textgrid contains the transcript and the wav contains 16khz audio
@@ -151,7 +153,8 @@ class MfaCorpus:
             out_audio_path = f"{path}/{character}/{index}.wav"
             out_textgrid_path = f"{path}/{character}/{index}.textgrid"
 
-            if os.path.exists(out_audio_path) and os.path.exists(out_textgrid_path):
+            if os.path.exists(out_audio_path) and os.path.exists(
+                    out_textgrid_path):
                 return
 
             data, rate = librosa.load(audio_path, sr=16000)
@@ -164,7 +167,7 @@ class MfaCorpus:
             soundfile.write(out_audio_path, data, rate)
 
         Parallel(n_jobs=-1, prefer="threads")(
-            delayed(convert)(row)
+            delayed(_dump_single)(row)
             for row in tqdm.tqdm(transcript_data.itertuples(),
                                  total=total_count,
                                  desc="Creating MFA corpus"))
@@ -197,46 +200,56 @@ class MfaAlignments:
     def load_alignment_dump(self, dump):
         self.alignments.append(dump)
 
-    def execute(self, paths):
-        subprocess.run([
-            '/opt/mfa/bin/mfa_align', '-v',
-            '/home/celestia/mfa_corpus/Adachi Tohru',
-            '/home/celestia/align-tmp/dictionary.txt',
-            '/opt/mfa/pretrained_models/english.zip',
-            '/home/celestia/mfa_alignments/adachi'
-        ])
-
         # read the results into a dataframe
 
         # without acoustic model (cd /opt/mfa/; /opt/mfa/bin/mfa_align -v /home/celestia/mfa_corpus/Adachi\ Tohru/ /home/celestia/align-tmp/dictionary.txt  /home/celestia/char_dictionaries/generated_model.zip /home/celestia/mfa_alignments/adachi/)
         # with acoustic model (cd /opt/mfa/; /opt/mfa/bin/mfa_train_and_align -v /home/celestia/mfa_corpus/Adachi\ Tohru/ /home/celestia/align-tmp/dictionary.txt /home/celestia/mfa_alignments/adachi)
         # todo: have mfa output the model to a target directory
 
-    def dump(self, path):
+    def dump(self,
+             path,
+             acoustic_model='/opt/mfa/pretrained_models/english.zip'):
         print('dumping alignments')
         # open a temp directory
         # need utility class for dealing with temp directories
 
         # create dictionary path
+        dictionary_path = ''  #...
         dictionary_data = pandas.concat(self.dictionaries)
-        dictionary_data.to_csv('/home/celestia/align-tmp/dictionary.txt',
+        dictionary_data.to_csv(dictionary_path,
                                sep='\t',
                                index=False,
                                header=False)
 
         corpus = pandas.concat(self.corpus)
-        for character, corpus in corpus.groupby(by=['character']):
-            paths = None
 
+        def _dump_single(character, corpus, mfa_cache_path):
+            mfa_cache_path = ''  # ...
             if corpus.shape[0] == 1:
-                # paths.corpus = corpus.path
-                pass
+                corpus_path = corpus.path
             else:
+                print(
+                    'warning: case where a corpus is split across directories is not yet supported'
+                )
                 # paths.corpus = '/home/celestia/align-tmp/adachi'
                 # copy data into corpus_path
-                pass
+                return
 
-            self.execute(paths)
+            if acoustic_model:
+                subprocess.run([
+                    '/opt/mfa/bin/mfa_align', '-v', '-t', mfa_cache_path,
+                    corpus_path, dictionary_path, acoustic_model,
+                    f'{path}/{character}'
+                ])
+            else:
+                subprocess.run([
+                    '/opt/mfa/bin/mfa_train_and_align', '-v', '-t', tmpdir,
+                    corpus_path, dictionary_path, f'{path}/{character}'
+                ])
+
+        Parallel(n_jobs=-1, prefer='threads')(
+            delayed(_dump_single)(character, corpus)
+            for character, corpus in tqdm(corpus.groupby(by=['character'])))
 
         # return new dumps + self.alignments, remove duplicates
 

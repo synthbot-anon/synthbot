@@ -144,10 +144,10 @@ class PhoneticDictionary:
         return result
 
     def debugger(self, output_path):
-        return HorseWordsDebugger(self.dictionary, output_path)
+        return PhoneticDictionaryDebugger(self.dictionary, output_path)
 
 
-class HorseWordsDebugger:
+class PhoneticDictionaryDebugger:
     def __init__(self, dictionary, output_path):
         self.dictionary = dictionary
         self.output_path = output_path
@@ -163,6 +163,9 @@ class HorseWordsDebugger:
         missing_data = []
 
         for data in audio.itertuples():
+            if pandas.isna(data.audio_path) or pandas.isna(data.transcript):
+                continue
+                
             transcript_words = re.split(r"[ ]", data.transcript)
             transcript_words = [x for x in transcript_words if x]
 
@@ -186,6 +189,7 @@ class HorseWordsDebugger:
         return result
 
     def copy_file(self, old_path, new_name):
+        print(old_path)
         extension = os.path.splitext(old_path)[1]
         shutil.copyfile(old_path, f"{self.output_path}/{new_name}{extension}")
 

@@ -20,6 +20,8 @@ cython = "*"
 lark-parser = "*"
 nltk = "*"
 pandas = "*"
+psycopg2 = "*"
+sqlalchemy = "*"
 
 [pipenv]
 allow_prereleases = true

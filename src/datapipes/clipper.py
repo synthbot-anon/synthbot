@@ -5,13 +5,13 @@ import os
 import re
 from datapipes import clipper_utils
 from collections import namedtuple
+from joblib import Parallel, delayed
 
 import dataclasses
 from typing import List, Optional, Dict
 import json
 import pandas
 from tqdm import tqdm
-
 
 PROCESSORS = {
     "original": "original",
@@ -58,8 +58,7 @@ class PonySorterFile:
             for label_data in file_data["labels"]:
                 try:
                     data = clipper_utils.load_ponysorter_data(
-                        self.params, self.filepath, label_data
-                    )
+                        self.params, self.filepath, label_data)
 
                     result = PonySorterRecord(**data)
                     result.source_reference = self.source_reference
@@ -115,8 +114,7 @@ class AudacityFile(object):
             for line_data in contents:
                 try:
                     data = clipper_utils.load_audacity_data(
-                        self.params, line_data.strip(), self.filepath
-                    )
+                        self.params, line_data.strip(), self.filepath)
 
                     result = AudacityRecord(**data)
                     result.source_reference = self.source_reference
@@ -259,7 +257,9 @@ class TranscriptFile:
             if tags == "Canterlot Voice":
                 return self.params.tags("Canterlot Voice", self.filepath)
             else:
-                return [self.params.tags(x, self.filepath) for x in tags.split()]
+                return [
+                    self.params.tags(x, self.filepath) for x in tags.split()
+                ]
 
     def noise_reference(self):
         filename = datapipes.common.parse_name(self.filepath)
@@ -296,10 +296,10 @@ class TranscriptFile:
 class ClipperRecord:
     audio: Optional[AudioFile] = dataclasses.field(default=None)
     transcript: Optional[TranscriptFile] = dataclasses.field(default=None)
-    ponysorter_record: Optional[PonySorterRecord] = dataclasses.field(default=None)
+    ponysorter_record: Optional[PonySorterRecord] = dataclasses.field(
+        default=None)
     audacity_records: Dict[str, AudacityRecord] = dataclasses.field(
-        default_factory=dict
-    )
+        default_factory=dict)
 
     def panda(self):
         fields = {}
@@ -316,8 +316,7 @@ class ClipperRecord:
             fields["character"] = self.transcript.character_reference()
             fields["source"] = self.transcript.source_reference()
             fields["start"] = timestamp_to_seconds(
-                self.transcript.timestamp_reference()
-            )
+                self.transcript.timestamp_reference())
             fields["tags"] = self.transcript.tag_references()
             fields["noise"] = self.transcript.noise_reference()
             fields["transcript"] = self.transcript.transcript()
@@ -348,7 +347,6 @@ class ClipperParams:
 
 class ClipperSet:
     """ Load clipper-structured audio files and labels."""
-
     def __init__(self, params):
         self.params = params
         self.ponysorter_files = []
@@ -373,7 +371,8 @@ class ClipperSet:
         progress_bar = lambda x, desc: x
         logger = datapipes.common.logger(verbose)
 
-        for audio_file in logger.tqdm(self.audio_files, desc="Scanning audio files"):
+        for audio_file in logger.tqdm(self.audio_files,
+                                      desc="Scanning audio files"):
             label_reference = audio_file.label_reference()
             source_reference = audio_file.source_reference()
 
@@ -384,18 +383,17 @@ class ClipperSet:
 
             result.setdefault(key, ClipperRecord()).audio = audio_file
 
-        for transcript_file in logger.tqdm(
-            self.transcript_files, desc="Scanning transcript files"
-        ):
+        for transcript_file in logger.tqdm(self.transcript_files,
+                                           desc="Scanning transcript files"):
             label_reference = transcript_file.label_reference()
             source_reference = transcript_file.source_reference()
 
             key = ClipperKey(source_reference, label_reference)
-            result.setdefault(key, ClipperRecord()).transcript = transcript_file
+            result.setdefault(key,
+                              ClipperRecord()).transcript = transcript_file
 
-        for audacity_file in logger.tqdm(
-            self.audacity_files, desc="Scanning audacity files"
-        ):
+        for audacity_file in logger.tqdm(self.audacity_files,
+                                         desc="Scanning audacity files"):
             source_reference = audacity_file.source_reference()
             processor_reference = audacity_file.processor_reference()
 
@@ -404,7 +402,8 @@ class ClipperSet:
 
                 key = ClipperKey(source_reference, label_reference)
                 known_records = result.setdefault(key, ClipperRecord())
-                known_records.audacity_records[processor_reference] = audacity_record
+                known_records.audacity_records[
+                    processor_reference] = audacity_record
 
         # NOTE: these are ignored by default because they don't match the audacity
         # files
@@ -421,7 +420,8 @@ class ClipperSet:
         #             key, ClipperRecord()
         #         ).ponysorter_record = ponysorter_record
 
-        verbose_records = logger.tqdm(result.values(), desc="Creating dataframe")
+        verbose_records = logger.tqdm(result.values(),
+                                      desc="Creating dataframe")
 
         def _filter_records():
             for record in verbose_records:
@@ -431,7 +431,14 @@ class ClipperSet:
                 # elif all_files:
                 yield record
 
-        return pandas.DataFrame([x.panda() for x in _filter_records()])
+        items = []
+        for x in _filter_records():
+            try:
+                items.append(x.panda())
+            except:
+                print('Error: xxx')
+
+        return pandas.DataFrame(items)
 
     def debugger(self):
         pass
